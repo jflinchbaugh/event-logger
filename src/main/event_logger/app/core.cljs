@@ -1,33 +1,85 @@
 (ns event-logger.app.core
   (:require [reagent.core :as r]
             [reagent.dom :as rdom]
-            [event-logger.app.views.header :refer [header]]
-            [event-logger.app.views.description :refer [description]]
-            [event-logger.app.views.aside :refer [aside]]
-            [event-logger.app.views.counter :refer [counter] :rename {counter counter-component}]))
+            [alandipert.storage-atom :refer [local-storage]]
+            [clojure.string :as str]))
 
 ;; --- App State ---
 
-(defonce counter (r/atom 0))  ;; Use `defonce` to preserve atom value across hot reloads
+(defonce state (local-storage (r/atom {}) :event-logger))
+
+(defonce new-category-value (r/atom ""))
+
+(comment
+
+  (reset!
+    state
+    {:categories [{:name "Code"
+                   :id "code"
+                   :occurrences []}
+                  {:name "Eat"
+                   :id "eat"
+                   :occurrences []}]})
+
+  @state
+
+  (reset! new-category-value "hi")
+
+  ;
+  )
 
 ;; --- Utility Functions ---
 
-(defn incrementer! [r]
-  (swap! r inc))
+(defn add-event! [r event]
+  (swap! r identity))
 
-(defn decrementer! [r]
-  (swap! r dec))
+(defn build-category [name]
+  {:name name
+   :id (str/replace (str/lower-case name) #" +" "-")
+   :occurrences []})
+
+(defn add-category! []
+  (swap! state update-in [:categories] conj (build-category @new-category-value))
+  (reset! new-category-value "")
+  )
+
+(defn track-category-value! [e]
+  (reset! new-category-value (-> e .-target .-value)))
+
+(defn category-key! [e]
+  (when (== 13 (.-which e))
+    (add-category!)))
+
+;; --- Views ---
+
+(defn categories []
+  [:ul
+   (for [item (:categories @state)]
+     [:li
+      {:key (:id item)}
+      [:button "+"]
+      [:label (:name item)]
+      ])])
+
+(defn add-item-form []
+  [:div
+   [:br]
+   [:input
+    {:type "text"
+     :size 20
+     :value @new-category-value
+     :name :new-category
+     :on-change track-category-value!
+     :on-key-down category-key! }]
+   [:button.add {:on-click add-category!} "Add"]])
 
 ;; --- App Component ---
 
 (defn app []
   [:div.wrapper
-   [header]
-   [description]
-   [aside]
-   [counter-component {:counter (str @counter)
-                       :inc-fn #(incrementer! counter)
-                       :dec-fn #(decrementer! counter)}]])
+   [categories]
+   [add-item-form]
+   ])
 
 ;; --- Render App ---
 
