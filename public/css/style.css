@@ -34,10 +34,8 @@ body {
   padding: 2rem;
 }
 
-.counter {
-  padding: 3rem 0;
-  display: flex;
-  justify-content: center;
+div.add {
+  padding-top: 4rem;
 }
 
 label {
@@ -59,6 +57,7 @@ button {
 
 button.add {
   font-size: 1rem;
+  padding: 0.5rem 0.5rem;
 }
 
 ul {

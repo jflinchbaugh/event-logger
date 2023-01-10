@@ -13,13 +13,14 @@
 (comment
 
   (reset!
-    state
-    {:categories [{:name "Code"
-                   :id "code"
-                   :occurrences []}
-                  {:name "Eat"
-                   :id "eat"
-                   :occurrences []}]})
+   state
+   {:display-category nil
+    :categories [{:name "Code"
+                  :id "code"
+                  :occurrences []}
+                 {:name "Eat"
+                  :id "eat"
+                  :occurrences []}]})
 
   @state
 
@@ -33,20 +34,28 @@
 (defn add-event! [r event]
   (swap! r identity))
 
-(defn build-category [name]
+(defn make-id [name]
+  (str/replace (str/lower-case name) #" +" "-"))
+
+(defn make-category [name]
   {:name name
-   :id (str/replace (str/lower-case name) #" +" "-")
+   :id (make-id name)
    :occurrences []})
 
+(defn is-category? [category]
+  ((->> @state :categories (map :id) set) (make-id category)))
+
 (defn add-category! []
-  (swap! state update-in [:categories] conj (build-category @new-category-value))
-  (reset! new-category-value "")
-  )
+  (when (and
+         (not (str/blank? @new-category-value))
+         (not (is-category? @new-category-value)))
+    (swap! state update-in [:categories] conj (make-category @new-category-value))
+    (reset! new-category-value "")))
 
 (defn track-category-value! [e]
   (reset! new-category-value (-> e .-target .-value)))
 
-(defn category-key! [e]
+(defn category-key-down! [e]
   (when (== 13 (.-which e))
     (add-category!)))
 
@@ -59,18 +68,17 @@
       {:key (:id item)}
       [:button "+"]
       [:label (:name item)]
-      ])])
+      [:div.details {:id (str "details-" (:id item))}]])])
 
 (defn add-item-form []
-  [:div
-   [:br]
+  [:div.add
    [:input
     {:type "text"
      :size 20
      :value @new-category-value
      :name :new-category
      :on-change track-category-value!
-     :on-key-down category-key! }]
+     :on-key-down category-key-down!}]
    [:button.add {:on-click add-category!} "Add"]])
 
 ;; --- App Component ---
@@ -78,8 +86,7 @@
 (defn app []
   [:div.wrapper
    [categories]
-   [add-item-form]
-   ])
+   [add-item-form]])
 
 ;; --- Render App ---
 
