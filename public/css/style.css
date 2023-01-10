@@ -39,9 +39,9 @@ div.add {
 }
 
 label {
-    margin: 0;
-    padding: 1rem;
-    font-size: 1rem;
+  margin: 0;
+  padding: 1rem;
+  font-size: 1rem;
 }
 
 button {
@@ -53,13 +53,14 @@ button {
   text-decoration: none;
   font-size: 1rem;
   cursor: pointer;
-  background-color: rgba(0, 140, 186, 1); /* Blue */
+  background-color: rgba(0, 140, 186, 1);
+  /* Blue */
 }
 
 button.delete {
-    width: 100%;
-    padding: 0.0.75rem;
-    font-size: 0.75rem;
+  width: 100%;
+  padding: 0.0.75rem;
+  font-size: 0.75rem;
 }
 
 button.add {
@@ -68,17 +69,18 @@ button.add {
 }
 
 input.new-category {
-    width: 100%;
-    font-size: 1rem;
-    border-radius: 1rem;
+  width: 100%;
+  font-size: 1rem;
+  border-radius: 1rem;
 }
 
 ul {
   list-style-type: none;
 }
 
+
 ul.events {
-    font-size: 1rem;
+  font-size: 1rem;
 }
 
 button:focus {
@@ -90,14 +92,14 @@ button:hover {
 }
 
 .details {
-    padding: 0.25rem;
-    border-radius: 1rem;
-    font-size: 2rem;
-    margin-left: 1rem;
-    background: white;
-    text-align: right;
+  padding: 0.25rem;
+  border-radius: 1rem;
+  font-size: 2rem;
+  margin-left: 1rem;
+  background: white;
+  text-align: right;
 }
 
 .details button {
-    font-size: 1rem;
+  font-size: 1rem;
 }
