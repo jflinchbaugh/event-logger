@@ -17,10 +17,10 @@
    {:display-category nil
     :categories [{:name "Code"
                   :id "code"
-                  :occurrences []}
+                  :events []}
                  {:name "Sleep"
                   :id "sleep"
-                  :occurrences []}]})
+                  :events []}]})
 
   @state
 
@@ -31,16 +31,13 @@
 
 ;; --- Utility Functions ---
 
-(defn add-event! [r event]
-  (swap! r identity))
-
 (defn make-id [name]
   (str/replace (str/lower-case name) #" +" "-"))
 
 (defn make-category [name]
   {:name name
    :id (make-id name)
-   :occurrences []})
+   :events []})
 
 (defn is-category? [category]
   ((->> @state :categories (map :id) set) (make-id category)))
@@ -61,14 +58,27 @@
 
 (defn open-category! [id]
   (swap!
-    state
-    assoc-in
-    [:display-category]
-    (if (= id (:display-category @state)) nil id)))
+   state
+   assoc-in
+   [:display-category]
+   (if (= id (:display-category @state)) nil id)))
 
 (defn delete-category! [id]
   (swap! state update-in [:categories] (comp vec (partial remove (comp #{id} :id))))
   (open-category! nil))
+
+(defn add-event! [id]
+  (swap! state assoc-in [:display-category] id)
+  (swap!
+   state
+   update-in [:categories]
+   (fn [cats]
+     (mapv
+      (fn [cat]
+        (if (not= id (:id cat))
+          cat
+          (update-in cat [:events] conj (js/Date.))))
+      cats))))
 
 ;; --- Views ---
 
@@ -77,18 +87,24 @@
    {:on-click (partial delete-category! id)}
    "X"])
 
+(defn category-details [item]
+  [:div.details {:id (str "details-" (:id item))}
+   [:ul.events
+    (for [event (sort-by - (:events item))]
+      [:li {:key (.getTime event)} (str event)])]
+   [category-controls (:id item)]])
+
 (defn categories []
   [:ul
    (for [item (:categories @state)]
      [:li
       {:key (:id item)}
-      [:button "+"]
+      [:button {:on-click (partial add-event! (:id item))} "+"]
       [:label
        {:on-click (partial open-category! (:id item))}
        (:name item)]
       (when (= (:id item) (:display-category @state))
-        [:div.details {:id (str "details-" (:id item))}
-         [category-controls (:id item)]])])])
+        [category-details item])])])
 
 (defn add-item-form []
   [:div.add
