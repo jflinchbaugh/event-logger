@@ -3,7 +3,7 @@
 /* Reset */
 html {
   box-sizing: border-box;
-  font-size: 16px;
+  font-size: 16pt;
 }
 
 * {
@@ -31,7 +31,7 @@ body {
 
 /* App */
 .wrapper {
-  padding: 2rem;
+  padding: 1rem;
 }
 
 div.add {
@@ -39,8 +39,9 @@ div.add {
 }
 
 label {
+    margin: 0;
     padding: 1rem;
-    font-size: 2rem;
+    font-size: 1rem;
 }
 
 button {
@@ -48,16 +49,28 @@ button {
   border-radius: 1rem;
   color: white;
   text-align: center;
-  padding: 0.5rem 1rem;
+  padding: 0.25rem 0.5rem;
   text-decoration: none;
-  font-size: 2rem;
+  font-size: 1rem;
   cursor: pointer;
   background-color: rgba(0, 140, 186, 1); /* Blue */
 }
 
+button.delete {
+    width: 100%;
+    padding: 0.0.75rem;
+    font-size: 0.75rem;
+}
+
 button.add {
-  font-size: 1rem;
-  padding: 0.5rem 0.5rem;
+  font-size: 0.75rem;
+  width: 100%;
+}
+
+input.new-category {
+    width: 100%;
+    font-size: 1rem;
+    border-radius: 1rem;
 }
 
 ul {
@@ -72,10 +85,15 @@ button:hover {
   background-color: rgba(0, 140, 186, 0.8);
 }
 
-.val {
-  font-size: 6rem;
-  font-weight: lighter;
-  text-align: center;
-  width: 12rem;
-  height: 8rem;
+.details {
+    padding: 0.25rem;
+    border-radius: 1rem;
+    font-size: 2rem;
+    margin-left: 1rem;
+    background: white;
+    text-align: right;
+}
+
+.details button {
+    font-size: 1rem;
 }

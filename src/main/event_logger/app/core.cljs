@@ -18,8 +18,8 @@
     :categories [{:name "Code"
                   :id "code"
                   :occurrences []}
-                 {:name "Eat"
-                  :id "eat"
+                 {:name "Sleep"
+                  :id "sleep"
                   :occurrences []}]})
 
   @state
@@ -59,7 +59,23 @@
   (when (== 13 (.-which e))
     (add-category!)))
 
+(defn open-category! [id]
+  (swap!
+    state
+    assoc-in
+    [:display-category]
+    (if (= id (:display-category @state)) nil id)))
+
+(defn delete-category! [id]
+  (swap! state update-in [:categories] (comp vec (partial remove (comp #{id} :id))))
+  (open-category! nil))
+
 ;; --- Views ---
+
+(defn category-controls [id]
+  [:button.delete
+   {:on-click (partial delete-category! id)}
+   "X"])
 
 (defn categories []
   [:ul
@@ -67,12 +83,16 @@
      [:li
       {:key (:id item)}
       [:button "+"]
-      [:label (:name item)]
-      [:div.details {:id (str "details-" (:id item))}]])])
+      [:label
+       {:on-click (partial open-category! (:id item))}
+       (:name item)]
+      (when (= (:id item) (:display-category @state))
+        [:div.details {:id (str "details-" (:id item))}
+         [category-controls (:id item)]])])])
 
 (defn add-item-form []
   [:div.add
-   [:input
+   [:input.new-category
     {:type "text"
      :size 20
      :value @new-category-value
