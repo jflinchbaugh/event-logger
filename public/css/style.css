@@ -4,6 +4,7 @@
 html {
   box-sizing: border-box;
   font-size: 16pt;
+  background-color: white;
 }
 
 * {
@@ -27,6 +28,7 @@ ul {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  -webkit-user-select: none;
 }
 
 /* App */
@@ -53,8 +55,7 @@ button {
   text-decoration: none;
   font-size: 1rem;
   cursor: pointer;
-  background-color: rgba(0, 140, 186, 1);
-  /* Blue */
+  background-color: rgba(0, 140, 186, 1); /* Blue */
 }
 
 button.delete {
@@ -96,7 +97,7 @@ button:hover {
   border-radius: 1rem;
   font-size: 2rem;
   margin-left: 1rem;
-  background: white;
+  background-color: lightgrey;
   text-align: right;
 }
 
