@@ -2,7 +2,10 @@
   (:require [reagent.core :as r]
             [reagent.dom :as rdom]
             [alandipert.storage-atom :refer [local-storage]]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [cljc.java-time.local-date-time :as ld]
+            [cljc.java-time.format.date-time-formatter :as df]
+            ))
 
 ;; --- App State ---
 
@@ -53,7 +56,9 @@
          (not (str/blank? @new-category-value))
          (not (is-category? @new-category-value)))
     (do
-      (swap! state update-in [:categories] conj (make-category @new-category-value))
+      (swap! state
+        update-in [:categories]
+        conj (make-category @new-category-value))
       (reset! new-category-value ""))
     (open-category! (make-id @new-category-value))))
 
@@ -65,7 +70,9 @@
     (add-category!)))
 
 (defn delete-category! [id]
-  (swap! state update-in [:categories] (comp vec (partial remove (comp #{id} :id))))
+  (swap! state
+    update-in [:categories]
+    (comp vec (partial remove (comp #{id} :id))))
   (open-category! nil))
 
 (defn add-event! [id]
@@ -78,7 +85,7 @@
       (fn [cat]
         (if (not= id (:id cat))
           cat
-          (update-in cat [:events] conj (js/Date.))))
+          (update-in cat [:events] conj (str (ld/now)))))
       cats))))
 
 ;; --- Views ---
@@ -92,7 +99,7 @@
   [:div.details {:id (str "details-" (:id item))}
    [:ul.events
     (for [event (sort-by - (:events item))]
-      [:li {:key (.getTime event)} (str event)])]
+      [:li {:key event} (df/format df/iso-local-date-time (ld/parse event))])]
    [category-controls (:id item)]])
 
 (defn categories []
