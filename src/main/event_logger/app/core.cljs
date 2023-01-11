@@ -42,12 +42,20 @@
 (defn is-category? [category]
   ((->> @state :categories (map :id) set) (make-id category)))
 
+(defn open-category! [id]
+  (swap! state assoc-in [:display-category] id))
+
+(defn toggle-category! [id]
+  (open-category! (if (= id (:display-category @state)) nil id)))
+
 (defn add-category! []
-  (when (and
+  (if (and
          (not (str/blank? @new-category-value))
          (not (is-category? @new-category-value)))
-    (swap! state update-in [:categories] conj (make-category @new-category-value))
-    (reset! new-category-value "")))
+    (do
+      (swap! state update-in [:categories] conj (make-category @new-category-value))
+      (reset! new-category-value ""))
+    (open-category! (make-id @new-category-value))))
 
 (defn track-category-value! [e]
   (reset! new-category-value (-> e .-target .-value)))
@@ -56,19 +64,12 @@
   (when (== 13 (.-which e))
     (add-category!)))
 
-(defn open-category! [id]
-  (swap!
-   state
-   assoc-in
-   [:display-category]
-   (if (= id (:display-category @state)) nil id)))
-
 (defn delete-category! [id]
   (swap! state update-in [:categories] (comp vec (partial remove (comp #{id} :id))))
   (open-category! nil))
 
 (defn add-event! [id]
-  (swap! state assoc-in [:display-category] id)
+  (open-category! id)
   (swap!
    state
    update-in [:categories]
@@ -101,7 +102,7 @@
       {:key (:id item)}
       [:button {:on-click (partial add-event! (:id item))} "+"]
       [:label
-       {:on-click (partial open-category! (:id item))}
+       {:on-click (partial toggle-category! (:id item))}
        (:name item)]
       (when (= (:id item) (:display-category @state))
         [category-details item])])])
