@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "rimraf": "^3.0.2",
-    "serve": "^10.0.2",
+    "serve": "^14.1.2",
     "shadow-cljs": "2.20.17"
   },
   "dependencies": {
