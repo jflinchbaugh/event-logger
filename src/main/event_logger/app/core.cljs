@@ -18,12 +18,7 @@
   (reset!
    state
    {:display-category nil
-    :categories [{:name "Code"
-                  :id "code"
-                  :events []}
-                 {:name "Sleep"
-                  :id "sleep"
-                  :events []}]})
+    :categories (mapv make-category ["Code" "Sleep"])})
 
   @state
 
