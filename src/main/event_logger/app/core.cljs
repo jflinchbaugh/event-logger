@@ -98,7 +98,7 @@
 (defn category-details [item]
   [:div.details {:id (str "details-" (:id item))}
    [:ul.events
-    (for [event (sort-by - (:events item))]
+    (for [event (reverse (sort (:events item)))]
       [:li {:key event} (df/format df/iso-local-date-time (ld/parse event))])]
    [category-controls (:id item)]])
 
