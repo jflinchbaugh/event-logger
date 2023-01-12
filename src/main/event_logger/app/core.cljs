@@ -86,9 +86,10 @@
 ;; --- Views ---
 
 (defn category-controls [id]
-  [:button.delete
-   {:on-click (partial delete-category! id)}
-   "X"])
+  [:div.controls
+   [:button.delete
+    {:on-click (partial delete-category! id)}
+    "X"]])
 
 (defn category-details [item]
   [:div.details {:id (str "details-" (:id item))}

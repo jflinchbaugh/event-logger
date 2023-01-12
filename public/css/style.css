@@ -59,14 +59,18 @@ button {
 }
 
 button.delete {
-  width: 100%;
   padding: 0.0.75rem;
   font-size: 0.75rem;
+  text-align: right;
 }
 
 button.add {
   font-size: 0.75rem;
   width: 100%;
+}
+
+.controls {
+  text-align: right;
 }
 
 input.new-category {
