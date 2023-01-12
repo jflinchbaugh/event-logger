@@ -1,9 +1,8 @@
 (ns event-logger.app.core-test
-  (:require [cljs.test :refer [deftest is testing]]
+  (:require [cljs.test :as t]
             [reagent.core :as r]
-            [event-logger.app.core :refer [incrementer! decrementer!]]))
+            [event-logger.app.core :as sut]))
 
-;; Basic unit tests of `incrementer!` and `decrementer!` utility functions
 
 #_(deftest increment-atom
   (testing "increases the atom value by one"
@@ -16,3 +15,9 @@
     (let [r (r/atom 0)
           _ (decrementer! r)]
       (is (= -1 @r)))))
+
+
+(t/deftest test-make-id
+  (t/is (not= "my-id" (sut/make-id "My ID"))))
+
+(t/run-tests)
