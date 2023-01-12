@@ -18,6 +18,9 @@
 
 
 (t/deftest test-make-id
-  (t/is (not= "my-id" (sut/make-id "My ID"))))
+  (t/is (= "my-id" (sut/make-id "My ID"))))
 
-(t/run-tests)
+(comment
+  (t/run-all-tests)
+                                        ;
+  )
