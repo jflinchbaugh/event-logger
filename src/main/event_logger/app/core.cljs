@@ -33,9 +33,10 @@
   (str/replace (str/lower-case name) #" +" "-"))
 
 (defn make-category [name]
-  {:name name
-   :id (make-id name)
-   :events []})
+  (let [trimmed (str/trim name)]
+    {:name trimmed
+     :id (make-id trimmed)
+     :events []}))
 
 (defn is-category? [category]
   ((->> @state :categories (map :id) set) (make-id category)))
