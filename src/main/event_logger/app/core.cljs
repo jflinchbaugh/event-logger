@@ -13,6 +13,8 @@
 
 (defonce new-category-value (r/atom ""))
 
+(defonce confirmed-id (r/atom nil))
+
 (comment
 
   (reset!
@@ -42,6 +44,7 @@
   ((->> @state :categories (map :id) set) (make-id category)))
 
 (defn open-category! [id]
+  (reset! confirmed-id nil)
   (swap! state assoc-in [:display-category] id))
 
 (defn toggle-category! [id]
@@ -71,6 +74,9 @@
     (comp vec (partial remove (comp #{id} :id))))
   (open-category! nil))
 
+(defn confirm-delete-category! [id]
+  (reset! confirmed-id id))
+
 (defn add-event! [id]
   (open-category! id)
   (swap!
@@ -88,9 +94,12 @@
 
 (defn category-controls [id]
   [:div.controls
-   [:button.delete
-    {:on-click (partial delete-category! id)}
-    "X"]])
+   (if (= @confirmed-id id)
+     [:button.delete
+      {:on-click (partial delete-category! id)}
+      "Really?"]
+     [:button.delete
+      {:on-click (partial confirm-delete-category! id)} "X"])])
 
 (defn category-details [item]
   [:div.details {:id (str "details-" (:id item))}
