@@ -16,6 +16,8 @@
 
 (defonce adding-event (r/atom nil))
 
+(defonce confirm-delete-event (r/atom nil))
+
 (comment
 
   (reset!
@@ -51,6 +53,7 @@
   ((->> @state :categories (map :id) set) (make-id category)))
 
 (defn open-category! [id]
+  (reset! confirm-delete-event nil)
   (reset! confirm-delete-id nil)
   (swap! state assoc-in [:display-category] id))
 
@@ -99,7 +102,7 @@
           (update-in
             cat
             [:events]
-            conj
+            (comp distinct conj)
             (process-date-str (:event @adding-event)))))
       cats)))
   (reset! adding-event nil))
@@ -115,6 +118,26 @@
   (when (== 13 (.-which e))
     (add-event!)))
 
+(defn open-delete-event! [id event]
+  (reset! confirm-delete-event {:id id :event event}))
+
+(defn delete-event! [id event]
+  (prn "delete " id event)
+  (swap!
+    state
+    update-in [:categories]
+    (fn [cats]
+      (mapv
+        (fn [cat]
+          (if (not= (:id @confirm-delete-event) (:id cat))
+            cat
+            (update-in
+              cat
+              [:events]
+              (fn [events] (remove #{event} events))
+              )))
+        cats)))
+  (reset! confirm-delete-event nil))
 
 ;; --- Views ---
 
@@ -139,7 +162,15 @@
    [:ul.events
     (doall
       (for [event (reverse (sort (:events item)))]
-        [:li {:key event} (process-date-str event)]))]
+        [:li
+         {:key event}
+         [:span.event
+          {:on-click (partial open-delete-event! (:id item) event)}
+          (process-date-str event)]
+         (when (= {:id (:id item) :event event} @confirm-delete-event)
+           [:button.delete
+            {:on-click (partial delete-event! (:id item) event)}
+            "X"])]))]
    [category-controls (:id item)]])
 
 (defn categories []
