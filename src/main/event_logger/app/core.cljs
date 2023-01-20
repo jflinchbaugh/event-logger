@@ -12,7 +12,9 @@
 
 (defonce new-category-value (r/atom ""))
 
-(defonce delete-id (r/atom nil))
+(defonce confirm-delete-id (r/atom nil))
+
+(defonce adding-event (r/atom nil))
 
 (comment
 
@@ -30,6 +32,12 @@
 
 ;; --- Utility Functions ---
 
+(defn now []
+  (df/format df/iso-local-date-time (ld/with-nano (ld/now) 0)))
+
+(defn process-date-str [event]
+  (df/format df/iso-local-date-time (ld/with-nano (ld/parse event) 0)))
+
 (defn make-id [name]
   (str/replace (str/lower-case name) #" +" "-"))
 
@@ -43,10 +51,11 @@
   ((->> @state :categories (map :id) set) (make-id category)))
 
 (defn open-category! [id]
-  (reset! delete-id nil)
+  (reset! confirm-delete-id nil)
   (swap! state assoc-in [:display-category] id))
 
 (defn toggle-category! [id]
+  (reset! adding-event nil)
   (open-category! (if (= id (:display-category @state)) nil id)))
 
 (defn add-category! []
@@ -76,26 +85,42 @@
   (open-category! nil))
 
 (defn confirm-delete-category! [id]
-  (reset! delete-id id))
+  (reset! confirm-delete-id id))
 
-(defn add-event! [id]
-  (open-category! id)
+(defn add-event! []
   (swap!
    state
    update-in [:categories]
    (fn [cats]
      (mapv
       (fn [cat]
-        (if (not= id (:id cat))
+        (if (not= (:id @adding-event) (:id cat))
           cat
-          (update-in cat [:events] conj (str (ld/now)))))
-      cats))))
+          (update-in
+            cat
+            [:events]
+            conj
+            (process-date-str (:event @adding-event)))))
+      cats)))
+  (reset! adding-event nil))
+
+(defn open-add-event! [id]
+  (reset! adding-event {:id id :event (now)})
+  (open-category! id))
+
+(defn track-event-value! [e]
+  (swap! adding-event assoc-in [:event] (-> e .-target .-value)))
+
+(defn event-key-down! [e]
+  (when (== 13 (.-which e))
+    (add-event!)))
+
 
 ;; --- Views ---
 
 (defn category-controls [id]
   [:div.controls
-   (if (= @delete-id id)
+   (if (= @confirm-delete-id id)
      [:button.delete
       {:on-click (partial delete-category! id)}
       "Really?"]
@@ -104,22 +129,33 @@
 
 (defn category-details [item]
   [:div.details {:id (str "details-" (:id item))}
+   (when @adding-event
+     [:input.new-category
+      {:type "text"
+       :value (:event @adding-event)
+       :name :new-category
+       :on-change track-event-value!
+       :on-key-down event-key-down!}])
    [:ul.events
-    (for [event (reverse (sort (:events item)))]
-      [:li {:key event} (df/format df/iso-local-date-time (ld/parse event))])]
+    (doall
+      (for [event (reverse (sort (:events item)))]
+        [:li {:key event} (process-date-str event)]))]
    [category-controls (:id item)]])
 
 (defn categories []
   [:ul
-   (for [item (:categories @state)]
-     [:li
-      {:key (:id item)}
-      [:button {:on-click (partial add-event! (:id item))} "+"]
-      [:label
-       {:on-click (partial toggle-category! (:id item))}
-       (:name item)]
-      (when (= (:id item) (:display-category @state))
-        [category-details item])])])
+   (doall
+     (for [item (:categories @state)]
+       [:li
+        {:key (:id item)}
+        [:button {:on-click (if @adding-event
+                              add-event!
+                              (partial open-add-event! (:id item)))} "+"]
+        [:label
+         {:on-click (partial toggle-category! (:id item))}
+         (:name item)]
+        (when (= (:id item) (:display-category @state))
+          [category-details item])]))])
 
 (defn add-item-form []
   [:div.add
