@@ -4,8 +4,7 @@
             [alandipert.storage-atom :refer [local-storage]]
             [clojure.string :as str]
             [cljc.java-time.local-date-time :as ld]
-            [cljc.java-time.format.date-time-formatter :as df]
-            ))
+            [cljc.java-time.format.date-time-formatter :as df]))
 
 ;; --- App State ---
 
@@ -52,12 +51,13 @@
 
 (defn add-category! []
   (if (and
-         (not (str/blank? @new-category-value))
-         (not (is-category? @new-category-value)))
+       (not (str/blank? @new-category-value))
+       (not (is-category? @new-category-value)))
     (do
-      (swap! state
-        update-in [:categories]
-        conj (make-category @new-category-value))
+      (swap!
+       state
+       update-in [:categories]
+       conj (make-category @new-category-value))
       (reset! new-category-value ""))
     (open-category! (make-id @new-category-value))))
 
@@ -69,9 +69,10 @@
     (add-category!)))
 
 (defn delete-category! [id]
-  (swap! state
-    update-in [:categories]
-    (comp vec (partial remove (comp #{id} :id))))
+  (swap!
+   state
+   update-in [:categories]
+   (comp vec (partial remove (comp #{id} :id))))
   (open-category! nil))
 
 (defn confirm-delete-category! [id]
@@ -124,7 +125,6 @@
   [:div.add
    [:input.new-category
     {:type "text"
-     :size 20
      :value @new-category-value
      :name :new-category
      :on-change track-category-value!
