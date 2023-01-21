@@ -122,7 +122,6 @@
   (reset! confirm-delete-event {:id id :event event}))
 
 (defn delete-event! [id event]
-  (prn "delete " id event)
   (swap!
     state
     update-in [:categories]
