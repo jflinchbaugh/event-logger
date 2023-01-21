@@ -11,67 +11,67 @@
 (defonce state (local-storage (r/atom {}) :event-logger))
 
 (defonce new-category-value (r/atom ""))
-
 (defonce confirm-delete-id (r/atom nil))
-
 (defonce adding-event (r/atom nil))
-
 (defonce confirm-delete-event (r/atom nil))
-
-(comment
-
-  (reset!
-   state
-   {:display-category nil
-    :categories (mapv make-category ["Code" "Sleep"])})
-
-  @state
-
-  (reset! new-category-value "hi")
-
-  ;
-  )
 
 ;; --- Utility Functions ---
 
-(defn now []
+(defn reset-editing!
+  "reset all in-progress edit states"
+  []
+  (reset! new-category-value "")
+  (reset! confirm-delete-id nil)
+  (reset! adding-event nil)
+  (reset! confirm-delete-event nil))
+
+(defn now-str
+  []
   (df/format df/iso-local-date-time (ld/with-nano (ld/now) 0)))
 
-(defn process-date-str [event]
-  (df/format df/iso-local-date-time (ld/with-nano (ld/parse event) 0)))
+(defn process-date-str
+  "parse, truncate, and reformat a date string"
+  [event-str]
+  (df/format
+    df/iso-local-date-time
+    (ld/with-nano (ld/parse event-str) 0)))
 
-(defn make-id [name]
+(defn make-category-id
+  "format an id string from a category name"
+  [name]
   (str/replace (str/lower-case name) #" +" "-"))
 
-(defn make-category [name]
+(defn make-category
+  "build a whole category map, ready to store, from a name"
+  [name]
   (let [trimmed (str/trim name)]
     {:name trimmed
-     :id (make-id trimmed)
+     :id (make-category-id trimmed)
      :events []}))
 
-(defn is-category? [category]
-  ((->> @state :categories (map :id) set) (make-id category)))
+(defn already-category?
+  [current-state category]
+  ((->> current-state :categories (map :id) set) (make-category-id category)))
 
 (defn open-category! [id]
-  (reset! confirm-delete-event nil)
-  (reset! confirm-delete-id nil)
+  (reset-editing!)
   (swap! state assoc-in [:display-category] id))
 
 (defn toggle-category! [id]
-  (reset! adding-event nil)
+  (reset-editing!)
   (open-category! (if (= id (:display-category @state)) nil id)))
 
 (defn add-category! []
   (if (and
        (not (str/blank? @new-category-value))
-       (not (is-category? @new-category-value)))
+       (not (already-category? @state @new-category-value)))
     (do
       (swap!
        state
        update-in [:categories]
        conj (make-category @new-category-value))
-      (reset! new-category-value ""))
-    (open-category! (make-id @new-category-value))))
+      (reset-editing!))
+    (open-category! (make-category-id @new-category-value))))
 
 (defn track-category-value! [e]
   (reset! new-category-value (-> e .-target .-value)))
@@ -105,11 +105,11 @@
             (comp distinct conj)
             (process-date-str (:event @adding-event)))))
       cats)))
-  (reset! adding-event nil))
+  (reset-editing!))
 
 (defn open-add-event! [id]
-  (reset! adding-event {:id id :event (now)})
-  (open-category! id))
+  (open-category! id)
+  (reset! adding-event {:id id :event (now-str)}))
 
 (defn track-event-value! [e]
   (swap! adding-event assoc-in [:event] (-> e .-target .-value)))
@@ -137,7 +137,7 @@
               (fn [events] (remove #{event} events))
               )))
         cats)))
-  (reset! confirm-delete-event nil))
+  (reset-editing!))
 
 ;; --- Views ---
 
