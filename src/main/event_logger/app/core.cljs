@@ -124,6 +124,7 @@
     (add-event!)))
 
 (defn open-delete-event! [id event]
+  (reset-editing!)
   (reset! confirm-delete-event {:id id :event event}))
 
 (defn delete-event! [id event]
