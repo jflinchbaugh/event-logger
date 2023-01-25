@@ -3,8 +3,7 @@
             [reagent.dom :as rdom]
             [alandipert.storage-atom :refer [local-storage]]
             [clojure.string :as str]
-            [cljc.java-time.local-date-time :as ld]
-            [cljc.java-time.format.date-time-formatter :as df]))
+            [tick.core :as t]))
 
 ;; --- App State ---
 
@@ -25,16 +24,22 @@
   (reset! adding-event nil)
   (reset! confirm-delete-event nil))
 
+(defn format-date-time [dt]
+  (t/format :iso-local-date-time dt))
+
 (defn now-str
+  "produce a string for the datetime now"
   []
-  (df/format df/iso-local-date-time (ld/with-nano (ld/now) 0)))
+  (-> (t/date-time) (t/truncate :seconds) format-date-time))
 
 (defn process-date-str
   "parse, truncate, and reformat a date string"
   [event-str]
-  (df/format
-    df/iso-local-date-time
-    (ld/with-nano (ld/parse event-str) 0)))
+  (->
+    event-str
+    t/date-time
+    (t/truncate :seconds)
+    format-date-time))
 
 (defn make-category-id
   "format an id string from a category name"
