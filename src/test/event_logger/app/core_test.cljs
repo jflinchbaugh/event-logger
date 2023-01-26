@@ -3,8 +3,8 @@
             [reagent.core :as r]
             [event-logger.app.core :as sut]))
 
-(t/deftest test-make-id
-  (t/is (= "my-id" (sut/make-id "My ID"))))
+(t/deftest test-make-category-id
+  (t/is (= "my-id" (sut/make-category-id "My ID"))))
 
 (t/deftest test-make-category
   (t/is
