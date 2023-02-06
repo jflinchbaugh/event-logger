@@ -198,6 +198,7 @@
   [:div.add
    [:input.new-category
     {:type "text"
+     :enterkeyhint "done"
      :value @new-category-value
      :name :new-category
      :on-change track-category-value!
