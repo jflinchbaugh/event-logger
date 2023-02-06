@@ -160,6 +160,7 @@
    (when @adding-event
      [:input.new-category
       {:type "text"
+       :enterkeyhint "done"
        :value (:event @adding-event)
        :name :new-category
        :on-change track-event-value!
