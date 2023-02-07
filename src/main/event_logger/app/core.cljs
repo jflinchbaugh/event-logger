@@ -177,6 +177,7 @@
                 hours (t/hours diff)]
             [:div.time-since
              (cond
+               (> 1 hours) (str hours " hours")
                (> 2 hours) (str hours " hour")
                (> 1 days) (str hours " hours")
                (> 2 days) (str days " day")
