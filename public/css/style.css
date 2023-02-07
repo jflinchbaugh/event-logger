@@ -46,6 +46,8 @@ label {
   font-size: 1rem;
 }
 
+
+
 button {
   border: none;
   border-radius: 1rem;
@@ -57,6 +59,7 @@ button {
   cursor: pointer;
   background-color: rgba(0, 140, 186, 1); /* Blue */
 }
+
 button.add {
   font-size: 0.75rem;
   width: 100%;
@@ -79,7 +82,6 @@ ul {
 ul li {
   padding: 0.25rem;
 }
-
 
 ul.events {
   font-size: 1rem;
@@ -106,6 +108,10 @@ button:hover {
   padding: 0 0.5rem;
 }
 
+.details .time-since {
+  font-size: 1rem;
+  text-align: right;
+}
 
 button.delete {
   background-color: rgba(255, 0, 50, 0.8);

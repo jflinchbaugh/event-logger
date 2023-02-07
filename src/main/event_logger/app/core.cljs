@@ -155,8 +155,20 @@
      [:button.delete
       {:on-click (partial confirm-delete-category! id)} "X"])])
 
+(defn since-component [item]
+  (let [now (r/atom (now-str))]
+    (fn [] 
+      (js/setTimeout (fn [] (reset! now (now-str))) (* 3600 1000))
+      (when-not (-> item :events empty?)
+        [:div.time-since
+           (t/days
+             (t/between
+               (-> item :events sort last t/date-time)
+               (t/date-time @now))) " " "days"]))))
+
 (defn category-details [item]
   [:div.details {:id (str "details-" (:id item))}
+   [since-component item]
    (when @adding-event
      [:input.new-category
       {:type "text"
