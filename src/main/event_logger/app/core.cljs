@@ -167,14 +167,20 @@
 (defn since-component []
   (let [now (r/atom (now-str))]
     (fn []
-      (js/setTimeout (fn [] (reset! now (now-str))) 500 #_(* 3600 1000))
+      (js/setTimeout (fn [] (reset! now (now-str))) (* 3600 1000))
       (let [events (:events (displayed-category))]
         (when-not (-> events empty?)
-          [:div.time-since
-           (t/days
-             (t/between
-               (-> events sort last t/date-time)
-               (t/date-time @now))) " " "days"])))))
+          (let [last-event (-> events sort last t/date-time)
+                now (t/date-time @now)
+                diff (t/between last-event now)
+                days (t/days diff)
+                hours (t/hours diff)]
+            [:div.time-since
+             (cond
+               (> 2 hours) (str hours " hour")
+               (> 1 days) (str hours " hours")
+               (> 2 days) (str days " day")
+               :else (str days " days"))]))))))
 
 (defn category-details [item]
   [:div.details {:id (str "details-" (:id item))}
