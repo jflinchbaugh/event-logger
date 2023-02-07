@@ -144,6 +144,15 @@
         cats)))
   (reset-editing!))
 
+(defn displayed-category []
+  (->>
+    @state
+    :categories
+    (filter
+      (fn [item] (= (:id item) (:display-category @state))))
+    first)
+  )
+
 ;; --- Views ---
 
 (defn category-controls [id]
@@ -155,16 +164,17 @@
      [:button.delete
       {:on-click (partial confirm-delete-category! id)} "X"])])
 
-(defn since-component [item]
+(defn since-component []
   (let [now (r/atom (now-str))]
-    (fn [] 
-      (js/setTimeout (fn [] (reset! now (now-str))) (* 3600 1000))
-      (when-not (-> item :events empty?)
-        [:div.time-since
+    (fn []
+      (js/setTimeout (fn [] (reset! now (now-str))) 500 #_(* 3600 1000))
+      (let [events (:events (displayed-category))]
+        (when-not (-> events empty?)
+          [:div.time-since
            (t/days
              (t/between
-               (-> item :events sort last t/date-time)
-               (t/date-time @now))) " " "days"]))))
+               (-> events sort last t/date-time)
+               (t/date-time @now))) " " "days"])))))
 
 (defn category-details [item]
   [:div.details {:id (str "details-" (:id item))}
