@@ -158,12 +158,13 @@
 
 (defn category-controls [id]
   [:div.controls
-   (if (= @confirm-delete-id id)
-     [:button.delete
-      {:on-click (partial delete-category! id)}
-      "Really?"]
-     [:button.delete
-      {:on-click (partial confirm-delete-category! id)} "X"])])
+   (when (not @adding-event)
+     (if (= @confirm-delete-id id)
+       [:button.delete
+        {:on-click (partial delete-category! id)}
+        "Really?"]
+       [:button.delete
+        {:on-click (partial confirm-delete-category! id)} "X"]))])
 
 (defn since-component []
   (let [now (r/atom (now-str))]
