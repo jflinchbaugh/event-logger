@@ -13,6 +13,7 @@
 (defonce confirm-delete-id (r/atom nil))
 (defonce adding-event (r/atom nil))
 (defonce confirm-delete-event (r/atom nil))
+(defonce display-category (r/atom nil))
 
 ;; --- Utility Functions ---
 
@@ -60,11 +61,11 @@
 
 (defn open-category! [id]
   (reset-editing!)
-  (swap! state assoc-in [:display-category] id))
+  (reset! display-category id))
 
 (defn toggle-category! [id]
   (reset-editing!)
-  (open-category! (if (= id (:display-category @state)) nil id)))
+  (open-category! (if (= id @display-category) nil id)))
 
 (defn add-category! []
   (if (and
@@ -149,7 +150,7 @@
     @state
     :categories
     (filter
-      (fn [item] (= (:id item) (:display-category @state))))
+      (fn [item] (= (:id item) @display-category)))
     first)
   )
 
@@ -220,7 +221,7 @@
         [:label
          {:on-click (partial toggle-category! (:id item))}
          (:name item)]
-        (when (= (:id item) (:display-category @state))
+        (when (= (:id item) @display-category)
           [category-details item])]))])
 
 (defn add-item-form []
