@@ -1,6 +1,5 @@
 (ns event-logger.app.core-test
   (:require [cljs.test :as t]
-            [reagent.core :as r]
             [tick.core :as tc]
             [event-logger.app.core :as sut]))
 
