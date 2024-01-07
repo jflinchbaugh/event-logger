@@ -128,7 +128,7 @@
   (reset-editing!)
   (reset! confirm-delete-event {:id id :event event}))
 
-(defn delete-event! [id event]
+(defn delete-event! [event]
   (swap!
     state
     update-in [:categories]
@@ -206,7 +206,7 @@
           (process-date-str event)]
          (when (= {:id (:id item) :event event} @confirm-delete-event)
            [:button.delete
-            {:on-click (partial delete-event! (:id item) event)}
+            {:on-click (partial delete-event! event)}
             "X"])]))]
    [category-controls (:id item)]])
 
