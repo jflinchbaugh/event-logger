@@ -190,8 +190,8 @@
    [since-component item]
    (when @adding-event
      [:input.new-category
-      {:type "text"
-       :enterkeyhint "done"
+      {:type "datetime-local"
+       :enterKeyHint "done"
        :value (:event @adding-event)
        :name :new-category
        :on-change track-event-value!
@@ -229,7 +229,7 @@
   [:div.add
    [:input.new-category
     {:type "text"
-     :enterkeyhint "done"
+     :enterKeyHint "done"
      :value @new-category-value
      :name :new-category
      :on-change track-category-value!
