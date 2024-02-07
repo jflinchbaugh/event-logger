@@ -75,6 +75,11 @@ input.new-category {
   border-radius: 1rem;
 }
 
+input.new-event {
+  font-size: 1rem;
+  border-radius: 1rem;
+}
+
 ul {
   list-style-type: none;
 }

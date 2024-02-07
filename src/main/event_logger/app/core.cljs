@@ -185,17 +185,24 @@
                (> 2 days) (str days " day")
                :else (str days " days"))]))))))
 
+(defn add-button [item]
+  [:button {:on-click (if @adding-event
+                        add-event!
+                        (partial open-add-event! (:id item)))} "+"])
+
 (defn category-details [item]
   [:div.details {:id (str "details-" (:id item))}
    [since-component item]
    (when @adding-event
-     [:input.new-category
-      {:type "datetime-local"
-       :enterKeyHint "done"
-       :value (:event @adding-event)
-       :name :new-category
-       :on-change track-event-value!
-       :on-key-down event-key-down!}])
+     [:div
+      [:input.new-event
+       {:type "datetime-local"
+        :enterKeyHint "done"
+        :value (:event @adding-event)
+        :name :new-category
+        :on-change track-event-value!
+        :on-key-down event-key-down!}]
+      [add-button item]])
    [:ul.events
     (doall
       (for [event (reverse (sort (:events item)))]
@@ -216,9 +223,7 @@
      (for [item (:categories @state)]
        [:li
         {:key (:id item)}
-        [:button {:on-click (if @adding-event
-                              add-event!
-                              (partial open-add-event! (:id item)))} "+"]
+        [add-button item]
         [:label
          {:on-click (partial toggle-category! (:id item))}
          (:name item)]
