@@ -199,7 +199,7 @@
        {:type "datetime-local"
         :enterKeyHint "done"
         :value (:event @adding-event)
-        :name :new-category
+        :name :new-event
         :on-change track-event-value!
         :on-key-down event-key-down!}]
       [add-button item]])
