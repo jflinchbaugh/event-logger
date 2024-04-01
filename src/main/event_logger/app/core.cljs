@@ -185,10 +185,10 @@
                (> 2 days) (str days " day")
                :else (str days " days"))]))))))
 
-(defn add-button [item]
+(defn add-button [item display]
   [:button {:on-click (if @adding-event
                         add-event!
-                        (partial open-add-event! (:id item)))} "+"])
+                        (partial open-add-event! (:id item)))} display])
 
 (defn category-details [item]
   [:div.details {:id (str "details-" (:id item))}
@@ -202,7 +202,7 @@
         :name :new-event
         :on-change track-event-value!
         :on-key-down event-key-down!}]
-      [add-button item]])
+      [add-button item "Save"]])
    [:ul.events
     (doall
       (for [event (reverse (sort (:events item)))]
@@ -223,7 +223,7 @@
      (for [item (:categories @state)]
        [:li
         {:key (:id item)}
-        [add-button item]
+        [add-button item "+"]
         [:label
          {:on-click (partial toggle-category! (:id item))}
          (:name item)]
