@@ -17,7 +17,20 @@
       (sut/format-date-time
         (tc/date-time "2023-01-01T01:01:01")))))
 
+(t/deftest test-describe-diff
+  (t/is (= "0 hours" (sut/describe-diff (tc/of-minutes 0))))
+  (t/is (= "0 hours" (sut/describe-diff (tc/of-minutes 59))))
+  (t/is (= "1 hour" (sut/describe-diff (tc/of-hours 1))))
+  (t/is (= "2 hours" (sut/describe-diff (tc/of-hours 2))))
+  (t/is (= "23 hours" (sut/describe-diff (tc/of-hours 23))))
+  (t/is (= "1 day" (sut/describe-diff (tc/of-hours 24))))
+  (t/is (= "1 day" (sut/describe-diff (tc/of-hours 47))))
+  (t/is (= "2 days" (sut/describe-diff (tc/of-hours 48))))
+
+  )
+
 (comment
   (t/run-all-tests)
+
                                         ;
   )

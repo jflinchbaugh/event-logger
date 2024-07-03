@@ -166,24 +166,29 @@
        [:button.delete
         {:on-click (partial confirm-delete-category! id)} "X"]))])
 
+(defn describe-diff [diff]
+  (let [days (t/days diff)
+        hours (t/hours diff)]
+    (cond
+      (> 1 hours) (str hours " hours")
+      (> 2 hours) (str hours " hour")
+      (> 1 days) (str hours " hours")
+      (> 2 days) (str days " day")
+      :else (str days " days")))
+  )
+
 (defn since-component []
   (let [now (r/atom (now-str))]
     (fn []
       (js/setTimeout (fn [] (reset! now (now-str))) (* 3600 1000))
       (let [events (:events (displayed-category))]
         (when-not (-> events empty?)
+          [:div.time-since
           (let [last-event (-> events sort last t/date-time)
                 now (t/date-time @now)
-                diff (t/between last-event now)
-                days (t/days diff)
-                hours (t/hours diff)]
-            [:div.time-since
-             (cond
-               (> 1 hours) (str hours " hours")
-               (> 2 hours) (str hours " hour")
-               (> 1 days) (str hours " hours")
-               (> 2 days) (str days " day")
-               :else (str days " days"))]))))))
+                diff (t/between last-event now)]
+            (describe-diff diff)
+            )])))))
 
 (defn add-button [item display]
   [:button {:on-click (if @adding-event
