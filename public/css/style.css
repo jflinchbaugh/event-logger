@@ -121,3 +121,7 @@ button:hover {
 button.delete {
   background-color: rgba(255, 0, 50, 0.8);
 }
+
+#debug {
+  width: 100%;
+}
