@@ -49,7 +49,7 @@
       (d/div adding-event))
     (d/ul {:class "events"}
       (doall
-        (for [event (reverse (sort (map process-date-str (:events item))))]
+        (for [event (reverse (sort (map normalize-date-str (:events item))))]
           (d/li
             {:key (str (:id item) "-" event)}
             (d/span {:class "event"}
