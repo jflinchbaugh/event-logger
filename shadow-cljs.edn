@@ -3,9 +3,7 @@
  ["src/dev"
   "src/main"
   "src/test"]
-
- :dependencies
- []
+ :dependencies [[lilactown/helix "0.1.11"]]
  :dev-http {8080 "public"}
  :builds
  {:frontend
