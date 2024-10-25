@@ -3,7 +3,10 @@
  ["src/dev"
   "src/main"
   "src/test"]
- :dependencies [[lilactown/helix "0.1.11"]]
+ :dependencies [[lilactown/helix "0.1.11"]
+                [tick "0.7.5"]
+                [cider/cider-nrepl "0.50.2"]
+                [refactor-nrepl "3.10.0"]]
  :dev-http {8080 "public"}
  :builds
  {:frontend
