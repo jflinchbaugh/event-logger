@@ -34,7 +34,7 @@
     {:on-click #(add-event! state set-state (:id item))}
     display))
 
-(defn process-date-str
+(defn normalize-date-str
   "parse, truncate, and reformat a date string"
   [event-str]
   (->
