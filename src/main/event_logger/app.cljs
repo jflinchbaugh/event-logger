@@ -53,7 +53,12 @@
            :enterKeyHint "done"
            :value (:adding-event state)
            :name :new-event
-           :on-change #(set-state assoc :adding-event (.. % -target -value))})))
+           :on-change #(set-state
+                         assoc
+                         :adding-event
+                         (.. % -target -value))})
+        ($ add-button
+           {:state state :set-state set-state :item item :display "Save"})))
     (d/ul {:class "events"}
       (doall
         (for [event (reverse (sort (map normalize-date-str (:events item))))]
