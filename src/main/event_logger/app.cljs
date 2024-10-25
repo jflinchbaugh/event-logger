@@ -43,10 +43,17 @@
     (t/truncate :seconds)
     format-date-time))
 
-(defnc category-details [{:keys [adding-event item]}]
+(defnc category-details [{:keys [set-state state item]}]
   (d/div {:class "details" :id (str "details-" (:id item))}
-    (when-not (nil? adding-event)
-      (d/div adding-event))
+    (when (:adding-event state)
+      (d/div
+        (d/input
+          {:class "new-event"
+           :type "datetime-local"
+           :enterKeyHint "done"
+           :value (:adding-event state)
+           :name :new-event
+           :on-change #(set-state assoc :adding-event (.. % -target -value))})))
     (d/ul {:class "events"}
       (doall
         (for [event (reverse (sort (map normalize-date-str (:events item))))]
@@ -64,14 +71,13 @@
             {:on-click #(set-state assoc :display-category (:id item))
             :key (:id item)}
             ($ add-button {:state state :set-state set-state :item item :display "+"})
-            (d/label 
-              (:name item))
+            (d/label (:name item))
             (when (= (:id item) (:display-category state))
               ($ category-details
-                 {:adding-event (:adding-event state) :item item}))))))))
+                 {:set-state set-state :state state :item item}))))))))
 
 (defnc debugger [{:keys [state]}]
-  (d/div {:id "debug"} (str state)))
+  (d/pre {:id "debug"} (with-out-str (cljs.pprint/pprint state))))
 
 (defnc app []
   (let [[state set-state] (hooks/use-state
