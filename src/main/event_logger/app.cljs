@@ -29,19 +29,9 @@
   (empty? (filter (partial = event) existing-events)))
 
 (defn have-event? [state]
-  (-> state :adding-event nil?))
+  (-> state :adding-event))
 
 ;; action
-
-(defn add-event! [state set-state id]
-  (if (have-event? state)
-    (set-state assoc :adding-event (now-str))
-    (let [time (:adding-event state)
-          idx (.indexOf (map :id (:categories state)) id)
-          existing-events (get-in state [:categories idx :events])]
-      (when (is-new-event? existing-events time)
-        (set-state update-in [:categories idx :events] conj time)
-        (set-state dissoc :adding-event)))))
 
 (defn open-category! [state set-state item-id]
   (when (not= item-id (:display-category state))
@@ -49,7 +39,10 @@
     (set-state assoc :display-category item-id)))
 
 (defn add-category! [state set-state]
-  (let [new-cat-name (:new-category state)
+  (let [new-cat-name (str/replace
+                       (->> state :new-category str/trim)
+                       #" +"
+                       " ")
         existing-categories (set (map :id (:categories state)))]
     (when (not (str/blank? new-cat-name))
       (if (existing-categories new-cat-name)
@@ -57,6 +50,16 @@
         (set-state
          update :categories
          conj {:id new-cat-name :name new-cat-name})))))
+
+(defn add-event! [state set-state id]
+  (if (have-event? state)
+    (let [time (:adding-event state)
+          idx (.indexOf (map :id (:categories state)) id)
+          existing-events (get-in state [:categories idx :events])]
+      (when (is-new-event? existing-events time)
+        (set-state update-in [:categories idx :events] conj time)
+        (set-state dissoc :adding-event)))
+    (set-state assoc :adding-event (now-str))))
 
 ;; define components using the `defnc` macro
 
@@ -108,10 +111,9 @@
   (d/pre {:id "debug"} (with-out-str (cljs.pprint/pprint state))))
 
 (defnc add-category-form [{:keys [state set-state]}]
-  (let [[new-category set-new-category] (hooks/use-state "")]
-    (d/div
-     {:class "add"}
-     (d/input
+  (d/div
+    {:class "add"}
+    (d/input
       {:class "new-category"
        :key :new-category
        :type "text"
@@ -121,18 +123,18 @@
        :value (:new-category state)
        :on-change (fn [e]
                     (set-state
-                     assoc
-                     :new-category (.. e -target -value)))
+                      assoc
+                      :new-category (.. e -target -value)))
        :on-key-down (fn [e]
                       (when (== 13 (.-which e))
                         (add-category! state set-state)
                         (set-state assoc :new-category "")))})
-     (d/button
+    (d/button
       {:class "add"
        :on-click (fn []
                    (add-category! state set-state)
                    (set-state assoc :new-category ""))}
-      "Add"))))
+      "Add")))
 
 (defnc app []
   (let [[state set-state] (hooks/use-state
