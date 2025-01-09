@@ -53,6 +53,11 @@
          update :categories
          conj {:id new-cat-name :name new-cat-name})))))
 
+(defn delete-category! [state set-state item-id]
+  (set-state update :categories
+             (comp vec (partial remove (comp #{item-id} :id))))
+  (open-category! state set-state nil))
+
 (defn add-event! [state set-state id]
   (if (have-event? state)
     (let [time (:adding-event state)
@@ -70,58 +75,67 @@
 
 (defnc add-button [{:keys [state set-state item display]}]
   (d/button
-    {:on-click (partial add-event! state set-state (:id item))}
-    display))
+   {:on-click (partial add-event! state set-state (:id item))}
+   display))
+
+(defnc category-controls [{:keys [set-state state item-id]}]
+  (d/div {:class "controls"}
+         (d/button
+          {:class "delete"
+           :on-click (partial delete-category! state set-state item-id)}
+           "X")))
 
 (defnc category-details [{:keys [set-state state item]}]
   (d/div
-    {:class "details" :id (str "details-" (:id item))}
-    (when (:adding-event state)
-      (d/div
-        (d/input
-          {:class "new-event"
-           :type "datetime-local"
-           :enterKeyHint "done"
-           :value (:adding-event state)
-           :name :new-event
-           :on-change #(set-state
-                         assoc
-                         :adding-event
-                         (.. % -target -value))})
-        ($ add-button
-           {:state state :set-state set-state :item item :display "Save"})))
-    (d/ul {:class "events"}
-      (doall
-        (for [event (reverse (sort (map normalize-date-str (:events item))))]
-          (d/li
-            {:key (str (:id item) "-" event)}
-            (d/span {:class "event"}
-              event)))))))
+   {:class "details" :id (str "details-" (:id item))}
+   (when (:adding-event state)
+     (d/div
+      (d/input
+       {:class "new-event"
+        :type "datetime-local"
+        :enterKeyHint "done"
+        :value (:adding-event state)
+        :name :new-event
+        :on-change #(set-state
+                     assoc
+                     :adding-event
+                     (.. % -target -value))})
+      ($ add-button
+         {:state state :set-state set-state :item item :display "Save"})))
+   (d/ul {:class "events"}
+         (doall
+          (for [event (reverse (sort (map normalize-date-str (:events item))))]
+            (d/li
+             {:key (str (:id item) "-" event)}
+             (d/span {:class "event"}
+                     event))))
+     ($ category-controls
+        {:state state :set-state set-state :item-id (:id item)}))))
 
 (defnc categories [{:keys [state set-state]}]
   (let [categories (:categories state)]
     (d/ul
-      (doall
-        (for [item categories]
-          (d/li
-            {:key (:id item)}
-            ($ add-button {:state state :set-state set-state :item item :display "+"})
-            (d/label
-              {:on-click (partial open-category! state set-state (:id item))}
-              (:name item))
-            (when (= (:id item) (:display-category state))
-              ($ category-details
-                 {:set-state set-state :state state :item item}))))))))
+     (doall
+      (for [item categories]
+        (d/li
+         {:key (:id item)}
+         ($ add-button {:state state :set-state set-state :item item :display "+"})
+         (d/label
+          {:on-click (partial open-category! state set-state (:id item))}
+          (:name item))
+         (when (= (:id item) (:display-category state))
+           ($ category-details
+              {:set-state set-state :state state :item item}))))))))
 
 (defnc debugger [{:keys [state]}]
   (d/pre {:id "debug"} (with-out-str (cljs.pprint/pprint state))))
 
 (defnc add-category-form [{:keys [state set-state]}]
   (d/div
-    {:class "add"}
-    (d/input
-      {:class "new-category"
-       :key :new-category
+   {:class "add"}
+   (d/input
+    {:class "new-category"
+     :key :new-category
      :type "text"
      :name :new-category
      :enterKeyHint "done"
