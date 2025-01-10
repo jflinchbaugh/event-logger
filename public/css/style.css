@@ -123,6 +123,7 @@ button.delete {
 }
 
 #debug {
+  font-size: 75%;
   width: 100%;
   background-color: lightgrey;
 }
