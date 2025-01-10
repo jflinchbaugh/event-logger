@@ -34,6 +34,7 @@
 ;; action
 
 (defn open-category! [state set-state item-id]
+  (set-state dissoc :confirm-delete-id)
   (if (= item-id (:display-category state))
     (set-state dissoc :display-category)
     (do
