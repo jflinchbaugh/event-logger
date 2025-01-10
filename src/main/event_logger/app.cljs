@@ -53,6 +53,9 @@
          update :categories
          conj {:id new-cat-name :name new-cat-name})))))
 
+(defn confirm-delete-category! [state set-state item-id]
+  (set-state assoc :confirm-delete-id item-id))
+
 (defn delete-category! [state set-state item-id]
   (set-state update :categories
              (comp vec (partial remove (comp #{item-id} :id))))
@@ -79,11 +82,17 @@
    display))
 
 (defnc category-controls [{:keys [set-state state item-id]}]
-  (d/div {:class "controls"}
-         (d/button
-          {:class "delete"
-           :on-click (partial delete-category! state set-state item-id)}
-           "X")))
+  (d/div
+   {:class "controls"}
+   (if (= (:confirm-delete-id state) item-id)
+     (d/button
+      {:class "delete"
+       :on-click (partial delete-category! state set-state item-id)}
+      "Really?")
+     (d/button
+      {:class "delete"
+       :on-click (partial confirm-delete-category! state set-state item-id)}
+      "X"))))
 
 (defnc category-details [{:keys [set-state state item]}]
   (d/div
@@ -109,8 +118,8 @@
              {:key (str (:id item) "-" event)}
              (d/span {:class "event"}
                      event))))
-     ($ category-controls
-        {:state state :set-state set-state :item-id (:id item)}))))
+         ($ category-controls
+            {:state state :set-state set-state :item-id (:id item)}))))
 
 (defnc categories [{:keys [state set-state]}]
   (let [categories (:categories state)]
