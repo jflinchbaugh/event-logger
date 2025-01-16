@@ -33,12 +33,23 @@
 
 ;; action
 
+;; confirmations
+(defn clear-confirms! [set-state]
+  (set-state dissoc :confirm))
+
+(defn set-confirm! [set-state name data]
+  (set-state assoc-in [:confirm name] data))
+
+(defn get-confirm [state name]
+  (get-in state [:confirm name]))
+
+
 (defn open-category! [state set-state item-id]
-  (set-state dissoc :confirm-delete-id)
+  (clear-confirms! set-state)
+  (set-state dissoc :adding-event)
   (if (= item-id (:display-category state))
     (set-state dissoc :display-category)
     (do
-      (set-state dissoc :adding-event)
       (set-state assoc :display-category item-id))))
 
 (defn add-category! [state set-state]
@@ -53,9 +64,6 @@
         (set-state
          update :categories
          conj {:id new-cat-name :name new-cat-name})))))
-
-(defn confirm-delete-category! [state set-state item-id]
-  (set-state assoc :confirm-delete-id item-id))
 
 (defn delete-category! [state set-state item-id]
   (set-state update :categories
@@ -76,7 +84,7 @@
       (set-state assoc :adding-event (now-str)))))
 
 (defn open-delete-event! [set-state id event]
-  (set-state assoc :confirm-delete-event {:id id :event event}))
+  (set-confirm! set-state :delete-event {:id id :event event}))
 
 (defn delete-event! [state set-state event]
   (set-state
@@ -85,14 +93,14 @@
     (fn [cats]
       (mapv
         (fn [cat]
-          (if (not= (:id (:confirm-delete-event state)) (:id cat))
+          (if (not= (:id (get-confirm state :delete-event)) (:id cat))
             cat
             (update
               cat
               :events
               (fn [events] (remove #{event} events)))))
         cats)))
-  (set-state dissoc :confirm-delete-event))
+  (clear-confirms! set-state))
 
 ;; define components using the `defnc` macro
 
@@ -104,14 +112,14 @@
 (defnc category-controls [{:keys [set-state state item-id]}]
   (d/div
    {:class "controls"}
-   (if (= (:confirm-delete-id state) item-id)
+   (if (= (get-confirm state :delete-category) item-id)
      (d/button
       {:class "delete"
        :on-click (partial delete-category! state set-state item-id)}
       "Really?")
      (d/button
       {:class "delete"
-       :on-click (partial confirm-delete-category! state set-state item-id)}
+       :on-click (partial set-confirm! set-state :delete-category item-id)}
       "X"))))
 
 (defnc category-details [{:keys [set-state state item]}]
@@ -142,7 +150,7 @@
               (when
                   (=
                     {:id (:id item) :event event}
-                    (:confirm-delete-event state))
+                    (get-confirm state :delete-event))
                 (d/button {:class "delete"
                            :on-click (partial delete-event! state set-state event)}
                   "X")))))
