@@ -25,15 +25,7 @@
    (t/truncate :seconds)
    format-date-time))
 
-(defn is-new-event? [existing-events event]
-  (empty? (filter (partial = event) existing-events)))
-
-(defn have-event? [state]
-  (-> state :adding-event))
-
-;; action
-
-;; confirmations
+;; confirmations utils
 (defn clear-confirms! [set-state]
   (set-state dissoc :confirm))
 
@@ -43,6 +35,13 @@
 (defn get-confirm [state name]
   (get-in state [:confirm name]))
 
+(defn is-new-event? [existing-events event]
+  (empty? (filter (partial = event) existing-events)))
+
+(defn have-event? [state]
+  (-> state :adding-event))
+
+;; action
 
 (defn open-category! [state set-state item-id]
   (clear-confirms! set-state)
