@@ -26,19 +26,29 @@
    format-date-time))
 
 ;; confirmations utils
-(defn clear-confirms! [set-state]
+(defn clear-confirms!
+  "clear all confirmations as you nav through the app"
+  [set-state]
   (set-state dissoc :confirm))
 
-(defn set-confirm! [set-state name data]
+(defn set-confirm!
+  "set a confirmation state"
+  [set-state name data]
   (set-state assoc-in [:confirm name] data))
 
-(defn get-confirm [state name]
+(defn get-confirm
+  "get a confirmation state"
+  [state name]
   (get-in state [:confirm name]))
 
-(defn is-new-event? [existing-events event]
+(defn is-new-event?
+  "is this event new, and not already in the list?"
+  [existing-events event]
   (empty? (filter (partial = event) existing-events)))
 
-(defn have-event? [state]
+(defn have-event?
+  "is there an event being added?"
+  [state]
   (-> state :adding-event))
 
 ;; action
