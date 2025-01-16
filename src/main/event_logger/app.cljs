@@ -75,6 +75,25 @@
         (open-category! state set-state id))
       (set-state assoc :adding-event (now-str)))))
 
+(defn open-delete-event! [set-state id event]
+  (set-state assoc :confirm-delete-event {:id id :event event}))
+
+(defn delete-event! [state set-state event]
+  (set-state
+    update
+    :categories
+    (fn [cats]
+      (mapv
+        (fn [cat]
+          (if (not= (:id (:confirm-delete-event state)) (:id cat))
+            cat
+            (update
+              cat
+              :events
+              (fn [events] (remove #{event} events)))))
+        cats)))
+  (set-state dissoc :confirm-delete-event))
+
 ;; define components using the `defnc` macro
 
 (defnc add-button [{:keys [state set-state item display]}]
@@ -117,8 +136,16 @@
           (for [event (reverse (sort (map normalize-date-str (:events item))))]
             (d/li
              {:key (str (:id item) "-" event)}
-             (d/span {:class "event"}
-                     event))))
+             (d/span {:class "event"
+                      :on-click (partial open-delete-event! set-state (:id item) event)}
+                     event)
+              (when
+                  (=
+                    {:id (:id item) :event event}
+                    (:confirm-delete-event state))
+                (d/button {:class "delete"
+                           :on-click (partial delete-event! state set-state event)}
+                  "X")))))
          ($ category-controls
             {:state state :set-state set-state :item-id (:id item)}))))
 
