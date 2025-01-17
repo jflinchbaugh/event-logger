@@ -2,6 +2,7 @@
   (:require [helix.core :refer [defnc $]]
             [helix.hooks :as hooks]
             [event-logger.localstorage :as ls]
+            [cognitect.transit :as transit]
             [helix.dom :as d]
             ["react-dom/client" :as rdom]
             [tick.core :as t]
@@ -9,6 +10,11 @@
             [clojure.edn :as edn]))
 
 ;; utilities
+
+(def transit-read-handlers (atom {}))
+
+(defn json->clj [x]
+  (transit/read (transit/reader :json {:handlers @transit-read-handlers}) x))
 
 (defn format-date-time [dt]
   (t/format :iso-local-date-time dt))
@@ -65,7 +71,7 @@
 (defn add-category! [state set-state]
   (let [new-cat-name (str/replace
                       (->> state :new-category str/trim)
-                      #" +" " " new)
+                      #" +" " ")
         new-cat-id (str/lower-case new-cat-name)
         existing-categories (set (map :id (:categories state)))]
     (when (not (str/blank? new-cat-name))
@@ -216,8 +222,10 @@
                            {:categories []
                             :new-category ""})]
     (hooks/use-effect :once
-      (set-state assoc :categories
-        (vec (or (edn/read-string (ls/get-item :categories)) []))))
+      (let [categories  (vec (edn/read-string (ls/get-item :categories)))
+            old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
+        (set-state assoc :categories (if (seq categories) categories (:categories old)))
+        (set-state assoc :old old)))
     (hooks/use-effect [state]
       (ls/set-item! :version "1")
       (ls/set-item! :categories (pr-str (:categories state))))
@@ -226,7 +234,7 @@
            ($ add-category-form {:state state :set-state set-state})
            ($ debugger {:state state}))))
 
-;; start your app with your favorite React renderer
+;; start your app with your favorite React render
 (defonce root (rdom/createRoot (js/document.getElementById "root")))
 
 (defn render []
