@@ -1,10 +1,12 @@
 (ns event-logger.app
   (:require [helix.core :refer [defnc $]]
             [helix.hooks :as hooks]
+            [event-logger.localstorage :as ls]
             [helix.dom :as d]
             ["react-dom/client" :as rdom]
             [tick.core :as t]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [clojure.edn :as edn]))
 
 ;; utilities
 
@@ -58,21 +60,20 @@
   (set-state dissoc :adding-event)
   (if (= item-id (:display-category state))
     (set-state dissoc :display-category)
-    (do
-      (set-state assoc :display-category item-id))))
+    (set-state assoc :display-category item-id)))
 
 (defn add-category! [state set-state]
   (let [new-cat-name (str/replace
                       (->> state :new-category str/trim)
-                      #" +"
-                      " ")
+                      #" +" " " new)
+        new-cat-id (str/lower-case new-cat-name)
         existing-categories (set (map :id (:categories state)))]
     (when (not (str/blank? new-cat-name))
-      (if (existing-categories new-cat-name)
-        (open-category! state set-state new-cat-name)
+      (if (existing-categories new-cat-id)
+        (open-category! state set-state new-cat-id)
         (set-state
          update :categories
-         conj {:id new-cat-name :name new-cat-name})))))
+         conj {:id new-cat-id :name new-cat-name})))))
 
 (defn delete-category! [state set-state item-id]
   (set-state update :categories
@@ -212,9 +213,14 @@
 
 (defnc app []
   (let [[state set-state] (hooks/use-state
-                           {:categories [{:id "cat" :name "cat"}
-                                         {:id "dog" :name "dog"}]
+                           {:categories []
                             :new-category ""})]
+    (hooks/use-effect :once
+      (set-state assoc :categories
+        (vec (or (edn/read-string (ls/get-item :categories)) []))))
+    (hooks/use-effect [state]
+      (ls/set-item! :version "1")
+      (ls/set-item! :categories (pr-str (:categories state))))
     (d/div {:class "wrapper"}
            ($ categories {:state state :set-state set-state})
            ($ add-category-form {:state state :set-state set-state})
