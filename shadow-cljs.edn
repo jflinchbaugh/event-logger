@@ -5,8 +5,8 @@
   "src/test"]
  :dependencies [[lilactown/helix "0.2.1"]
                 [tick "1.0"]
-                [cider/cider-nrepl "0.51.1"]
-                [com.cognitect/transit-cljs  "0.8.225"]
+                [cider/cider-nrepl "0.52.0"]
+                [com.cognitect/transit-cljs  "0.8.280"]
                 [refactor-nrepl "3.10.0"]]
  :dev-http {3000 "public"}
  :builds
