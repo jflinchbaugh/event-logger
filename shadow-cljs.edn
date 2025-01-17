@@ -12,6 +12,6 @@
  :builds
  {:frontend
   {:target :browser
-   :asset-path "js"
+   :asset-path "."
    :modules {:main {:init-fn event-logger.app/init}}}}
    }
