@@ -72,7 +72,9 @@
   (let [new-cat-name (str/replace
                       (->> state :new-category str/trim)
                       #" +" " ")
-        new-cat-id (str/lower-case new-cat-name)
+        new-cat-id (str/replace
+                     (str/lower-case new-cat-name)
+                     #" " "-")
         existing-categories (set (map :id (:categories state)))]
     (when (not (str/blank? new-cat-name))
       (if (existing-categories new-cat-id)
