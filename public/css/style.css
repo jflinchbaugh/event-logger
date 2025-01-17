@@ -122,3 +122,8 @@ button.delete {
   background-color: rgba(255, 0, 50, 0.8);
 }
 
+#debug {
+  font-size: 75%;
+  width: 100%;
+  background-color: lightgrey;
+}
