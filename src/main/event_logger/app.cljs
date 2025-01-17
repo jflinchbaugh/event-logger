@@ -189,7 +189,7 @@
               {:set-state set-state :state state :item item}))))))))
 
 (defnc debugger [{:keys [state]}]
-  (d/pre {:id "debug"} (pr-str state)))
+  (d/div {:id "debug"} (pr-str state)))
 
 (defnc add-category-form [{:keys [state set-state]}]
   (d/div
