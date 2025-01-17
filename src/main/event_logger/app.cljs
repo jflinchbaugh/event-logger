@@ -11,10 +11,8 @@
 
 ;; utilities
 
-(def transit-read-handlers (atom {}))
-
 (defn json->clj [x]
-  (transit/read (transit/reader :json {:handlers @transit-read-handlers}) x))
+  (transit/read (transit/reader :json) x))
 
 (defn format-date-time [dt]
   (t/format :iso-local-date-time dt))
