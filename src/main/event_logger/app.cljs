@@ -189,7 +189,7 @@
               {:set-state set-state :state state :item item}))))))))
 
 (defnc debugger [{:keys [state]}]
-  (d/pre {:id "debug"} (with-out-str state #_(cljs.pprint/pprint state))))
+  (d/pre {:id "debug"} (pr-str state)))
 
 (defnc add-category-form [{:keys [state set-state]}]
   (d/div
