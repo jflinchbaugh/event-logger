@@ -65,6 +65,11 @@ button.add {
   width: 100%;
 }
 
+button.debug {
+  font-size: 0.75rem;
+  width: 100%;
+}
+
 .controls {
   text-align: right;
 }
@@ -123,8 +128,11 @@ button.delete {
 }
 
 #debug {
-  display: none;
+  margin-top: 2em;
+  display: block;
+  font-family: monospace;
   font-size: 75%;
   width: 100%;
+  border-radius: 1rem;
   background-color: lightgrey;
 }

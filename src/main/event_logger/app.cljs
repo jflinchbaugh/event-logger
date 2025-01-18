@@ -189,7 +189,10 @@
               {:set-state set-state :state state :item item}))))))))
 
 (defnc debugger [{:keys [state]}]
-  (d/div {:id "debug"} (pr-str state)))
+  (let [[debugger set-debugger] (hooks/use-state false)]
+    (d/div {:id "debug"}
+      (d/button {:class "debug" :on-click (fn [] (set-debugger not))} "Debug")
+      (d/p (when debugger (pr-str state))))))
 
 (defnc add-category-form [{:keys [state set-state]}]
   (d/div
