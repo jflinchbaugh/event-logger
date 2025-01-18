@@ -215,7 +215,7 @@
   (let [[debugger set-debugger] (hooks/use-state false)]
     (d/div {:id "debug"}
            (d/button {:class "debug" :on-click (fn [] (set-debugger not))} "Debug")
-           (d/p (when debugger (pr-str state))))))
+           (d/pre (when debugger (with-out-str (cljs.pprint/pprint state)))))))
 
 (defnc add-category-form [{:keys [state set-state]}]
   (d/div
