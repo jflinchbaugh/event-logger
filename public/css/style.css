@@ -63,6 +63,7 @@ button {
 button.add {
   font-size: 0.75rem;
   width: 100%;
+  margin-top: 1em;
 }
 
 button.debug {

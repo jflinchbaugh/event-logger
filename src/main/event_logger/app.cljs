@@ -57,6 +57,20 @@
   [state]
   (-> state :adding-event))
 
+(defn describe-diff [diff]
+  (let [days (t/days diff)
+        hours (t/hours diff)
+        minutes (t/minutes diff)]
+    (prn days hours minutes)
+    (cond
+      (> 1 minutes) "0 minutes ago"
+      (> 2 minutes) "1 minute ago"
+      (> 1 hours) (str minutes " minutes ago")
+      (> 2 hours) "1 hour ago"
+      (> 1 days) (str hours " hours ago")
+      (> 2 days) "1 day ago"
+      :else (str days " days ago"))))
+
 ;; action
 
 (defn open-category! [state set-state item-id]
@@ -71,8 +85,8 @@
                       (->> state :new-category str/trim)
                       #" +" " ")
         new-cat-id (str/replace
-                     (str/lower-case new-cat-name)
-                     #" " "-")
+                    (str/lower-case new-cat-name)
+                    #" " "-")
         existing-categories (set (map :id (:categories state)))]
     (when (not (str/blank? new-cat-name))
       (if (existing-categories new-cat-id)
@@ -104,21 +118,30 @@
 
 (defn delete-event! [state set-state event]
   (set-state
-    update
-    :categories
-    (fn [cats]
-      (mapv
-        (fn [cat]
-          (if (not= (:id (get-confirm state :delete-event)) (:id cat))
-            cat
-            (update
-              cat
-              :events
-              (fn [events] (remove #{event} events)))))
-        cats)))
+   update
+   :categories
+   (fn [cats]
+     (mapv
+      (fn [cat]
+        (if (not= (:id (get-confirm state :delete-event)) (:id cat))
+          cat
+          (update
+           cat
+           :events
+           (fn [events] (remove #{event} events)))))
+      cats)))
   (clear-confirms! set-state))
 
 ;; define components using the `defnc` macro
+
+(defnc since-component [{:keys [category]}]
+  (let [now (now-str)
+        events (:events category)]
+    (when (seq events)
+      (d/div {:class "time-since"}
+       (let [last-event (-> events sort last t/date-time)
+             diff (t/between last-event now)]
+         (describe-diff diff))))))
 
 (defnc add-button [{:keys [state set-state item display]}]
   (d/button
@@ -139,8 +162,8 @@
       "X"))))
 
 (defnc category-details [{:keys [set-state state item]}]
-  (d/div
-   {:class "details" :id (str "details-" (:id item))}
+  (d/div {:class "details" :id (str "details-" (:id item))}
+   ($ since-component {:category item})
    (when (:adding-event state)
      (d/div
       (d/input
@@ -163,13 +186,13 @@
              (d/span {:class "event"
                       :on-click (partial open-delete-event! set-state (:id item) event)}
                      event)
-              (when
-                  (=
-                    {:id (:id item) :event event}
-                    (get-confirm state :delete-event))
-                (d/button {:class "delete"
-                           :on-click (partial delete-event! state set-state event)}
-                  "X")))))
+             (when
+              (=
+               {:id (:id item) :event event}
+               (get-confirm state :delete-event))
+               (d/button {:class "delete"
+                          :on-click (partial delete-event! state set-state event)}
+                         "X")))))
          ($ category-controls
             {:state state :set-state set-state :item-id (:id item)}))))
 
@@ -191,8 +214,8 @@
 (defnc debugger [{:keys [state]}]
   (let [[debugger set-debugger] (hooks/use-state false)]
     (d/div {:id "debug"}
-      (d/button {:class "debug" :on-click (fn [] (set-debugger not))} "Debug")
-      (d/p (when debugger (pr-str state))))))
+           (d/button {:class "debug" :on-click (fn [] (set-debugger not))} "Debug")
+           (d/p (when debugger (pr-str state))))))
 
 (defnc add-category-form [{:keys [state set-state]}]
   (d/div
@@ -225,13 +248,13 @@
                            {:categories []
                             :new-category ""})]
     (hooks/use-effect :once
-      (let [categories  (vec (edn/read-string (ls/get-item :categories)))
-            old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
-        (set-state assoc :categories (if (seq categories) categories (:categories old)))
-        (set-state assoc :old old)))
+                      (let [categories  (vec (edn/read-string (ls/get-item :categories)))
+                            old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
+                        (set-state assoc :categories (if (seq categories) categories (:categories old)))
+                        (set-state assoc :old old)))
     (hooks/use-effect [state]
-      (ls/set-item! :version "1")
-      (ls/set-item! :categories (pr-str (:categories state))))
+                      (ls/set-item! :version "1")
+                      (ls/set-item! :categories (pr-str (:categories state))))
     (d/div {:class "wrapper"}
            ($ categories {:state state :set-state set-state})
            ($ add-category-form {:state state :set-state set-state})
