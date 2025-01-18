@@ -139,9 +139,9 @@
         events (:events category)]
     (when (seq events)
       (d/div {:class "time-since"}
-       (let [last-event (-> events sort last t/date-time)
-             diff (t/between last-event now)]
-         (describe-diff diff))))))
+             (let [last-event (-> events sort last t/date-time)
+                   diff (t/between last-event now)]
+               (describe-diff diff))))))
 
 (defnc add-button [{:keys [state set-state item display]}]
   (d/button
@@ -163,38 +163,52 @@
 
 (defnc category-details [{:keys [set-state state item]}]
   (d/div {:class "details" :id (str "details-" (:id item))}
-   ($ since-component {:category item})
-   (when (:adding-event state)
-     (d/div
-      (d/input
-       {:class "new-event"
-        :type "datetime-local"
-        :enterKeyHint "done"
-        :value (:adding-event state)
-        :name :new-event
-        :on-change #(set-state
-                     assoc
-                     :adding-event
-                     (.. % -target -value))})
-      ($ add-button
-         {:state state :set-state set-state :item item :display "Save"})))
-   (d/ul {:class "events"}
-         (doall
-          (for [event (reverse (sort (map normalize-date-str (:events item))))]
-            (d/li
-             {:key (str (:id item) "-" event)}
-             (d/span {:class "event"
-                      :on-click (partial open-delete-event! set-state (:id item) event)}
-                     event)
-             (when
-              (=
-               {:id (:id item) :event event}
-               (get-confirm state :delete-event))
-               (d/button {:class "delete"
-                          :on-click (partial delete-event! state set-state event)}
-                         "X")))))
-         ($ category-controls
-            {:state state :set-state set-state :item-id (:id item)}))))
+         ($ since-component {:category item})
+         (when (:adding-event state)
+           (d/div
+            (d/input
+             {:class "new-event"
+              :type "datetime-local"
+              :enterKeyHint "done"
+              :value (:adding-event state)
+              :name :new-event
+              :on-change #(set-state
+                           assoc
+                           :adding-event
+                           (.. % -target -value))})
+            ($ add-button
+               {:state state
+                :set-state set-state
+                :item item
+                :display "Save"})))
+         (d/ul
+          {:class "events"}
+          (doall
+            (for [event (->> item
+                          :events
+                          (map normalize-date-str)
+                          sort
+                          reverse)]
+             (d/li
+              {:key (str (:id item) "-" event)}
+              (d/span
+               {:class "event"
+                :on-click (partial
+                            open-delete-event!
+                            set-state
+                            (:id item)
+                            event)}
+               event)
+              (when
+               (=
+                {:id (:id item) :event event}
+                (get-confirm state :delete-event))
+                (d/button
+                 {:class "delete"
+                  :on-click (partial delete-event! state set-state event)}
+                 "X")))))
+          ($ category-controls
+             {:state state :set-state set-state :item-id (:id item)}))))
 
 (defnc categories [{:keys [state set-state]}]
   (let [categories (:categories state)]
@@ -203,7 +217,11 @@
       (for [item categories]
         (d/li
          {:key (:id item)}
-         ($ add-button {:state state :set-state set-state :item item :display "+"})
+         ($ add-button
+            {:state state
+             :set-state set-state
+             :item item
+             :display "+"})
          (d/label
           {:on-click (partial open-category! state set-state (:id item))}
           (:name item))
@@ -214,8 +232,13 @@
 (defnc debugger [{:keys [state]}]
   (let [[debugger set-debugger] (hooks/use-state false)]
     (d/div {:id "debug"}
-           (d/button {:class "debug" :on-click (fn [] (set-debugger not))} "Debug")
-           (d/pre (when debugger (with-out-str (cljs.pprint/pprint state)))))))
+           (d/button
+            {:class "debug"
+             :on-click (fn [] (set-debugger not))}
+            "Debug")
+           (d/pre
+            (when debugger
+              (with-out-str (cljs.pprint/pprint state)))))))
 
 (defnc add-category-form [{:keys [state set-state]}]
   (d/div
@@ -247,18 +270,22 @@
   (let [[state set-state] (hooks/use-state
                            {:categories []
                             :new-category ""})]
-    (hooks/use-effect :once
-                      (let [categories  (vec (edn/read-string (ls/get-item :categories)))
-                            old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
-                        (set-state assoc :categories (if (seq categories) categories (:categories old)))
-                        (set-state assoc :old old)))
-    (hooks/use-effect [state]
-                      (ls/set-item! :version "1")
-                      (ls/set-item! :categories (pr-str (:categories state))))
-    (d/div {:class "wrapper"}
-           ($ categories {:state state :set-state set-state})
-           ($ add-category-form {:state state :set-state set-state})
-           ($ debugger {:state state}))))
+    (hooks/use-effect
+     :once
+     (let [categories  (vec (edn/read-string (ls/get-item :categories)))
+           old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
+       (set-state assoc :categories
+                  (if (seq categories) categories (:categories old)))
+       (set-state assoc :old old)))
+    (hooks/use-effect
+     [state]
+     (ls/set-item! :version "1")
+     (ls/set-item! :categories (pr-str (:categories state))))
+    (d/div
+     {:class "wrapper"}
+     ($ categories {:state state :set-state set-state})
+     ($ add-category-form {:state state :set-state set-state})
+     ($ debugger {:state state}))))
 
 ;; start your app with your favorite React render
 (defonce root (rdom/createRoot (js/document.getElementById "root")))
