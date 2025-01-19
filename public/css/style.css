@@ -29,6 +29,7 @@ ul {
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   -webkit-user-select: none;
+  user-select: none;
 }
 
 /* App */
@@ -134,4 +135,9 @@ button.delete {
   width: 100%;
   border-radius: 1rem;
   background-color: lightgrey;
+}
+
+#debug pre {
+  -webkit-user-select: all;
+  user-select: all;
 }
