@@ -137,13 +137,17 @@
 ;; define components using the `defnc` macro
 
 (defnc since-component [{:keys [category]}]
-  (let [now (now-str)
-        events (:events category)]
-    (when (seq events)
-      (d/div {:class "time-since"}
-             (let [last-event (-> events sort last t/date-time)
-                   diff (t/between last-event now)]
-               (describe-diff diff))))))
+  (let [last-event (-> category :events sort last)
+        [now set-now] (hooks/use-state (t/date-time))]
+    (js/setTimeout (partial set-now (t/date-time)) 1000)
+    (when last-event
+      (d/div
+        {:class "time-since"}
+        (->
+          last-event
+          t/date-time
+          (t/between now)
+          describe-diff)))))
 
 (defnc add-button [{:keys [state set-state item display]}]
   (d/button
