@@ -60,10 +60,12 @@
 (defn describe-diff [diff]
   (let [days (t/days diff)
         hours (t/hours diff)
-        minutes (t/minutes diff)]
-    (prn days hours minutes)
+        minutes (t/minutes diff)
+        seconds (t/seconds diff)]
     (cond
-      (> 1 minutes) "0 minutes ago"
+      (> 1 seconds) "0 seconds ago"
+      (> 2 seconds) "1 second ago"
+      (> 1 minutes) (str seconds " seconds ago")
       (> 2 minutes) "1 minute ago"
       (> 1 hours) (str minutes " minutes ago")
       (> 2 hours) "1 hour ago"
