@@ -6,6 +6,7 @@
             [helix.dom :as d]
             ["react-dom/client" :as rdom]
             [tick.core :as t]
+            [cljs.pprint :as pp]
             [clojure.string :as str]
             [clojure.edn :as edn]))
 
@@ -244,7 +245,7 @@
             "Debug")
            (d/pre
             (when debugger
-              (with-out-str (cljs.pprint/pprint state)))))))
+              (with-out-str (pp/pprint state)))))))
 
 (defnc add-category-form [{:keys [state set-state]}]
   (d/div
