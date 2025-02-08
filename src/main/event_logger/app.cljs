@@ -26,11 +26,27 @@
 (defn normalize-date-str
   "parse, truncate, and reformat a date string"
   [event-str]
-  (->
-   event-str
-   t/date-time
-   (t/truncate :seconds)
-   format-date-time))
+    (->
+      event-str
+      t/date-time
+      (t/truncate :seconds)
+      format-date-time))
+
+(defn describe-diff [diff]
+  (let [days (t/days diff)
+        hours (t/hours diff)
+        minutes (t/minutes diff)
+        seconds (t/seconds diff)]
+    (cond
+      (> 1 seconds) "0 seconds ago"
+      (> 2 seconds) "1 second ago"
+      (> 1 minutes) (str seconds " seconds ago")
+      (> 2 minutes) "1 minute ago"
+      (> 1 hours) (str minutes " minutes ago")
+      (> 2 hours) "1 hour ago"
+      (> 1 days) (str hours " hours ago")
+      (> 2 days) "1 day ago"
+      :else (str days " days ago"))))
 
 ;; confirmations utils
 (defn clear-confirms!
@@ -48,31 +64,16 @@
   [state name]
   (get-in state [:confirm name]))
 
+;; event utils
 (defn is-new-event?
   "is this event new, and not already in the list?"
   [existing-events event]
   (empty? (filter (partial = event) existing-events)))
 
-(defn have-event?
+(defn adding-event?
   "is there an event being added?"
   [state]
-  (-> state :adding-event))
-
-(defn describe-diff [diff]
-  (let [days (t/days diff)
-        hours (t/hours diff)
-        minutes (t/minutes diff)
-        seconds (t/seconds diff)]
-    (cond
-      (> 1 seconds) "0 seconds ago"
-      (> 2 seconds) "1 second ago"
-      (> 1 minutes) (str seconds " seconds ago")
-      (> 2 minutes) "1 minute ago"
-      (> 1 hours) (str minutes " minutes ago")
-      (> 2 hours) "1 hour ago"
-      (> 1 days) (str hours " hours ago")
-      (> 2 days) "1 day ago"
-      :else (str days " days ago"))))
+  (-> state :adding-event nil? not))
 
 ;; action
 
@@ -104,7 +105,7 @@
   (open-category! state set-state nil))
 
 (defn add-event! [state set-state id]
-  (if (have-event? state)
+  (if (adding-event? state)
     (let [time (:adding-event state)
           idx (.indexOf (map :id (:categories state)) id)
           existing-events (get-in state [:categories idx :events])]

@@ -13,3 +13,7 @@ $ npx shadow-cljs compile frontend
 
 It'll give you a cljs repl in emacs
 and launch the browser view of the app.
+
+## Tests in Browser
+- `npx shadow-cljs watch test-browser`
+- open a browser to http://localhost:3021/

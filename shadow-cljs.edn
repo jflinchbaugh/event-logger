@@ -11,8 +11,22 @@
                 [refactor-nrepl "3.10.0"]]
  :dev-http {3000 "public"}
  :builds
- {:frontend
+ {
+  :frontend
   {:target :browser
    :asset-path "."
-   :modules {:main {:init-fn event-logger.app/init}}}}
-   }
+   :modules {:main {:init-fn event-logger.app/init}}}
+
+  :test
+  {:target :node-test
+   :output-to "out/node-tests.js"
+   :autorun true}
+
+  :test-browser
+  {:target     :browser-test
+   :test-dir   "out/browser/test"
+   :autorun true
+   :devtools   {:http-port 3021
+                :http-root "out/browser/test"}}
+
+  }}
