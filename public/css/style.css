@@ -47,6 +47,10 @@ label {
   font-size: 1rem;
 }
 
+pre {
+  white-space: pre-wrap;
+}
+
 button {
   border: none;
   border-radius: 1rem;
