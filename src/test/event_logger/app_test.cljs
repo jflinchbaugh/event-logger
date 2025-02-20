@@ -65,7 +65,7 @@
     (t/is (sut/adding-event? {:adding-event "event"}))))
 
 (t/deftest test-debugger
-  (t/testing "debugger has a debug button")
-  (t/is (-> ($ sut/debugger {:state {:things :ok}})
+  (t/testing "debugger has a debug button"
+    (t/is (-> ($ sut/debugger {:state {:things :ok}})
             tlr/render
-            (.getByText #"Debug"))))
+            (.getByText #"Debug")))))
