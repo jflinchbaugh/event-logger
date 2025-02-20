@@ -66,6 +66,7 @@
 
 (t/deftest test-debugger
   (t/testing "debugger has a debug button"
-    (t/is (-> ($ sut/debugger {:state {:things :ok}})
-            tlr/render
-            (.getByText #"Debug")))))
+    (let [container (-> ($ sut/debugger {:state {:things :ok}}) tlr/render)]
+      (-> container (.getByText #"Debug") .click)
+      (t/is (-> container (.getByText #"Debug")))
+      )))
