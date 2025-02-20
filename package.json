@@ -3,7 +3,11 @@
   "version": "0.0.1",
   "private": true,
   "devDependencies": {
-    "shadow-cljs": "^2.28.18"
+    "shadow-cljs": "^2.28.18",
+    "@testing-library/react": "^14.1.2",
+    "global-jsdom": "9.0.1",
+    "jsdom": "22.0.0",
+    "jsdom-global": "3.0.2"
   },
   "dependencies": {
     "@js-joda/core": "3.2.0",

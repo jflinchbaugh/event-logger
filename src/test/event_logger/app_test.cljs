@@ -1,7 +1,16 @@
 (ns event-logger.app-test
   (:require [cljs.test :as t]
+            ["@testing-library/react" :as tlr]
             [tick.core :as tc]
+            [helix.core :refer [$]]
             [event-logger.app :as sut]))
+
+
+(defn setup-root [f]
+  (f)
+  (tlr/cleanup))
+
+(t/use-fixtures :each setup-root)
 
 (t/deftest test-now-str
   (t/is (re-matches #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" (sut/now-str))))
@@ -54,3 +63,9 @@
   (t/testing "adding-event?"
     (t/is (not (sut/adding-event? {})))
     (t/is (sut/adding-event? {:adding-event "event"}))))
+
+(t/deftest test-debugger
+  (t/testing "debugger has a debug button")
+  (t/is (-> ($ sut/debugger {:state {:things :ok}})
+            tlr/render
+            (.getByText #"Debug"))))
