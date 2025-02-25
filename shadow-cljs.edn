@@ -19,6 +19,7 @@
 
   :test
   {:target :node-test
+   :main      node/main
    :output-to "out/node-tests.js"
    :autorun true}
 
