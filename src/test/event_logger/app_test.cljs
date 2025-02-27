@@ -3,8 +3,9 @@
             ["@testing-library/react" :as tlr]
             [tick.core :as tc]
             [helix.core :refer [$]]
-            [event-logger.app :as sut]))
-
+            [event-logger.app :as sut]
+            [shadow.cljs.modern :refer (js-await)]
+            [clojure.string :as str]))
 
 (defn setup-root [f]
   (f)
@@ -17,15 +18,15 @@
 
 (t/deftest test-normalize-date-str
   (t/is (= "2024-01-01T01:01:01"
-          (sut/normalize-date-str "2024-01-01T01:01:01")))
+           (sut/normalize-date-str "2024-01-01T01:01:01")))
   (t/is (= "2024-01-01T01:01:01"
-          (sut/normalize-date-str "2024-01-01T01:01:01.033")))
+           (sut/normalize-date-str "2024-01-01T01:01:01.033")))
   (t/is (= "2024-01-01T01:01:00"
-          (sut/normalize-date-str "2024-01-01T01:01"))))
+           (sut/normalize-date-str "2024-01-01T01:01"))))
 
 (t/deftest test-describe-diff
   (t/are [expected value unit]
-      (= expected (sut/describe-diff (tc/new-duration value unit)))
+         (= expected (sut/describe-diff (tc/new-duration value unit)))
     "0 seconds ago"  -1 :seconds
     "0 seconds ago"   0 :seconds
     "1 second ago"    1 :seconds
@@ -35,8 +36,7 @@
     "1 hour ago"      1 :hours
     "2 hours ago"     2 :hours
     "1 day ago"       1 :days
-    "2 days ago"      2 :days
-    ))
+    "2 days ago"      2 :days))
 
 (t/deftest test-confirms
   (t/testing "clear"
@@ -48,8 +48,8 @@
     (let [state {:confirm {:whatever 1}}
           set-state (fn [f & c] (apply f (cons state c)))]
       (t/is (=
-              {:confirm {:whatever 1 :another 2}}
-              (sut/set-confirm! set-state :another 2)))))
+             {:confirm {:whatever 1 :another 2}}
+             (sut/set-confirm! set-state :another 2)))))
 
   (t/testing "get"
     (let [state {:confirm {:whatever 1}}]
@@ -66,7 +66,17 @@
 
 (t/deftest test-debugger
   (t/testing "debugger has a debug button"
-    (let [container (-> ($ sut/debugger {:state {:things :ok}}) tlr/render)]
-      (-> container (.getByText #"Debug") .click)
-      (t/is (-> container (.getByText #"Debug")))
-      )))
+    (let [container (-> ($ sut/debugger {:state {:things :ok}}) tlr/render)
+          btn (.. container (getByText #"Debug"))]
+      (t/is btn)
+      (t/is (= "submit" (.. btn -type)))
+
+      (t/is (re-matches #"(?s)Debug" (.. container -container -innerText)))
+
+      (t/testing "clicking the button exposes debug data"
+        (t/is (.click tlr/fireEvent btn))
+
+        (t/is
+          (re-matches
+            #"(?s)Debug.*\{:things :ok\}.*"
+            (.. container -container -innerText)))))))
