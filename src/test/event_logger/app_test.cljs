@@ -65,18 +65,21 @@
     (t/is (sut/adding-event? {:adding-event "event"}))))
 
 (t/deftest test-debugger
-  (t/testing "debugger has a debug button"
-    (let [container (-> ($ sut/debugger {:state {:things :ok}}) tlr/render)
-          btn (.. container (getByText #"Debug"))]
+  (let [container (-> ($ sut/debugger {:state {:things :ok}}) tlr/render)
+        btn (.. container (getByText #"Debug"))]
+    (t/testing "debugger has a debug button and no info"
       (t/is btn)
       (t/is (= "submit" (.. btn -type)))
 
-      (t/is (re-matches #"(?s)Debug" (.. container -container -innerText)))
+      (t/is (re-matches #"(?s)Debug" (.. container -container -innerText))))
 
-      (t/testing "clicking the button exposes debug data"
-        (t/is (.click tlr/fireEvent btn))
+    (t/testing "clicking the button exposes debug data"
+      (t/is (.click tlr/fireEvent btn))
+      (t/is
+       (re-matches
+        #"(?s)Debug.*\{:things :ok\}.*"
+        (.. container -container -innerText))))
 
-        (t/is
-          (re-matches
-            #"(?s)Debug.*\{:things :ok\}.*"
-            (.. container -container -innerText)))))))
+    (t/testing "clicking the button hides debug data"
+      (t/is (.click tlr/fireEvent btn))
+      (t/is (re-matches #"(?s)Debug" (.. container -container -innerText))))))
