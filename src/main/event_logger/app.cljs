@@ -257,7 +257,7 @@
      :type "text"
      :name :new-category
      :enterKeyHint "done"
-     :placeholder "new category"
+     :placeholder "New Category"
      :value (:new-category state)
      :on-change (fn [e]
                   (set-state

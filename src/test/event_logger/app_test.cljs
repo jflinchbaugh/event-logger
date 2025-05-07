@@ -69,17 +69,35 @@
         btn (.. container (getByText #"Debug"))]
     (t/testing "debugger has a debug button and no info"
       (t/is btn)
-      (t/is (= "submit" (.. btn -type)))
+      (t/is (= "submit" (-> btn .-type)))
 
-      (t/is (re-matches #"(?s)Debug" (.. container -container -innerText))))
+      (t/is (= "Debug" (-> container .-container .-innerText))))
 
     (t/testing "clicking the button exposes debug data"
       (t/is (.click tlr/fireEvent btn))
       (t/is
-       (re-matches
-        #"(?s)Debug.*\{:things :ok\}.*"
-        (.. container -container -innerText))))
+       (= ["Debug" "{:things :ok}"]
+          (-> container .-container .-innerText str/split-lines))))
 
     (t/testing "clicking the button hides debug data"
       (t/is (.click tlr/fireEvent btn))
-      (t/is (re-matches #"(?s)Debug" (.. container -container -innerText))))))
+      (t/is (= "Debug" (-> container .-container .-innerText))))))
+
+(t/deftest test-app
+  (let [container (tlr/render ($ sut/app))
+        add-btn (-> container (.getByText "Add"))
+        debug-btn (-> container (.getByText "Debug"))
+        category-input (-> container (.getByPlaceholderText "New Category"))
+        ]
+    (t/testing "there are basic components and no categories"
+      (t/is add-btn)
+      (t/is debug-btn)
+      (t/is category-input)
+      (t/is (not (-> container (.queryByText "+")))))
+    (t/testing "add a category"
+      (t/is (= ":new-category" (.-name category-input)))
+      #_(.change tlr/fireEvent category-input {:target {:value "mine"}})
+      #_(-> container (.getByValue "mine"))
+      (.click tlr/fireEvent debug-btn)
+      #_(t/is (= "thing" (-> container .-container .-innerText)))
+      )))
