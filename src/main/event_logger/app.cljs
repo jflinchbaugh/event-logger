@@ -283,8 +283,7 @@
      (let [categories  (vec (edn/read-string (ls/get-item :categories)))
            old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
        (set-state assoc :categories
-                  (if (seq categories) categories (:categories old)))
-       (set-state assoc :old old)))
+                  (if (seq categories) categories (:categories old)))))
     (hooks/use-effect
      [state]
      (ls/set-item! :version "1")
