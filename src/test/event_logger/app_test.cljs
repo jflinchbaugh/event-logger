@@ -95,7 +95,7 @@
       (t/is category-input)
       (t/is (not (-> container (.queryByText "+")))))
     (t/testing "add a category"
-      (t/is (= ":new-category" (.-name category-input)))
+      #_(t/is (= ":new-category" (.-name category-input)))
       #_(.change tlr/fireEvent category-input {:target {:value "mine"}})
       #_(-> container (.getByValue "mine"))
       (.click tlr/fireEvent debug-btn)

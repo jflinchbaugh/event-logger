@@ -26,11 +26,11 @@
 (defn normalize-date-str
   "parse, truncate, and reformat a date string"
   [event-str]
-    (->
-      event-str
-      t/date-time
-      (t/truncate :seconds)
-      format-date-time))
+  (->
+   event-str
+   t/date-time
+   (t/truncate :seconds)
+   format-date-time))
 
 (defn describe-diff [diff]
   (let [days (t/days diff)
@@ -144,12 +144,12 @@
     (js/setTimeout (partial set-now (t/date-time)) 1000)
     (when last-event
       (d/div
-        {:class "time-since"}
-        (->
-          last-event
-          t/date-time
-          (t/between now)
-          describe-diff)))))
+       {:class "time-since"}
+       (->
+        last-event
+        t/date-time
+        (t/between now)
+        describe-diff)))))
 
 (defnc add-button [{:keys [state set-state item display]}]
   (d/button
@@ -192,20 +192,20 @@
          (d/ul
           {:class "events"}
           (doall
-            (for [event (->> item
-                          :events
-                          (map normalize-date-str)
-                          sort
-                          reverse)]
+           (for [event (->> item
+                            :events
+                            (map normalize-date-str)
+                            sort
+                            reverse)]
              (d/li
               {:key (str (:id item) "-" event)}
               (d/span
                {:class "event"
                 :on-click (partial
-                            open-delete-event!
-                            set-state
-                            (:id item)
-                            event)}
+                           open-delete-event!
+                           set-state
+                           (:id item)
+                           event)}
                event)
               (when
                (=
@@ -244,9 +244,72 @@
             {:class "debug"
              :on-click (fn [] (set-debugger not))}
             "Debug")
-           (d/pre
-            (when debugger
+           (when debugger
+             (d/pre
               (with-out-str (pp/pprint state)))))))
+
+(defnc config [{:keys [state set-state]}]
+  (let [[show set-show] (hooks/use-state false)]
+    (d/div {:id "config"}
+           (d/button
+            {:class "config"
+             :on-click (fn [] (set-show not))}
+            "Config")
+           (when show
+             (do
+               (d/div {:class "config"}
+                      (d/div {:class "row"}
+                             (d/label {:for :host} "Host")
+                             (d/input
+                              {:name :host
+                               :id :host
+                               :on-change (fn [e]
+                                            (set-state
+                                             assoc-in
+                                             [:new-config :host] (.. e -target -value)))
+                               :value (get-in state [:new-config :host])}))
+                      (d/div {:class "row"}
+                             (d/label {:for :user} "User")
+                             (d/input
+                              {:name :user
+                               :id :user
+                               :on-change (fn [e]
+                                            (set-state
+                                             assoc-in
+                                             [:new-config :user] (.. e -target -value)))
+                               :value (get-in state [:new-config :user])}))
+                      (d/div {:class "row"}
+                             (d/label {:for :password} "Password")
+                             (d/input
+                              {:name :password
+                               :id :password
+                               :on-change (fn [e]
+                                            (set-state
+                                             assoc-in
+                                             [:new-config :password] (.. e -target -value)))
+                               :value (get-in state [:new-config :password])}))
+                      (d/div {:class "row"}
+                             (d/label {:for :remember} "Remember")
+                             (d/input
+                              {:type "checkbox"
+                               :name :remember
+                               :id :remember
+                               :on-change (fn [e]
+                                            (set-state
+                                             assoc-in
+                                             [:new-config :remember] (.. e -target -checked)))
+                               :value (get-in state [:new-config :remember])}))
+                      (d/div {:class "row"}
+                             (d/button
+                              {:class "upload"
+                               :on-click (fn []
+                                           (prn (:new-config state))
+                                           (when (get-in state [:new-config :remember])
+                                             (set-state
+                                              assoc
+                                              :config
+                                              (dissoc (:new-config state) :remember))))}
+                              "Upload"))))))))
 
 (defnc add-category-form [{:keys [state set-state]}]
   (d/div
@@ -281,18 +344,25 @@
     (hooks/use-effect
      :once
      (let [categories  (vec (edn/read-string (ls/get-item :categories)))
+           config  (edn/read-string (ls/get-item :config))
+           _ (prn config)
            old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
        (set-state assoc :categories
-                  (if (seq categories) categories (:categories old)))))
+                  (if (seq categories) categories (:categories old)))
+       (set-state assoc :config config)
+       (set-state assoc :new-config config)))
     (hooks/use-effect
      [state]
      (ls/set-item! :version "1")
-     (ls/set-item! :categories (pr-str (:categories state))))
+     (ls/set-item! :config (pr-str (:config state)))
+     (ls/set-item! :categories (pr-str (:categories state)))
+     (prn "config saved: " (ls/get-item :config)))
     (d/div
      {:class "wrapper"}
      ($ categories {:state state :set-state set-state})
      ($ add-category-form {:state state :set-state set-state})
-     ($ debugger {:state state}))))
+     ($ debugger {:state state})
+     ($ config {:state state :set-state set-state}))))
 
 ;; start your app with your favorite React render
 (defonce root (rdom/createRoot (js/document.getElementById "root")))

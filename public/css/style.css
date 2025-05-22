@@ -74,6 +74,11 @@ button.debug {
   width: 100%;
 }
 
+button.config {
+  font-size: 0.75rem;
+  width: 100%;
+}
+
 .controls {
   text-align: right;
 }
@@ -139,9 +144,28 @@ button.delete {
   width: 100%;
   border-radius: 1rem;
   background-color: lightgrey;
+  border: solid 1px grey;
 }
 
 #debug pre {
   -webkit-user-select: all;
   user-select: all;
+}
+
+#config {
+  display: block;
+  font-size: 75%;
+  margin-top: 1em;
+  width: 100%;
+  border-radius: 1rem;
+  background-color: white;
+  border: solid 1px grey;
+}
+
+.config-form {
+  margin: 1em;
+}
+
+.config-form .row {
+  margin: 0.5em;
 }
