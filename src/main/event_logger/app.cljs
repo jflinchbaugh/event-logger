@@ -303,7 +303,6 @@
                              (d/button
                               {:class "upload"
                                :on-click (fn []
-                                           (prn (:new-config state))
                                            (when (get-in state [:new-config :remember])
                                              (set-state
                                               assoc
@@ -345,7 +344,6 @@
      :once
      (let [categories  (vec (edn/read-string (ls/get-item :categories)))
            config  (edn/read-string (ls/get-item :config))
-           _ (prn config)
            old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
        (set-state assoc :categories
                   (if (seq categories) categories (:categories old)))
@@ -355,8 +353,7 @@
      [state]
      (ls/set-item! :version "1")
      (ls/set-item! :config (pr-str (:config state)))
-     (ls/set-item! :categories (pr-str (:categories state)))
-     (prn "config saved: " (ls/get-item :config)))
+     (ls/set-item! :categories (pr-str (:categories state))))
     (d/div
      {:class "wrapper"}
      ($ categories {:state state :set-state set-state})
