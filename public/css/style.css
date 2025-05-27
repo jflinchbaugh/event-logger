@@ -43,6 +43,12 @@ div.add {
 
 label {
   margin: 0;
+  padding-right: 1rem;
+  font-size: 1rem;
+}
+
+.category {
+  margin: 0;
   padding: 1rem;
   font-size: 1rem;
 }
@@ -79,6 +85,11 @@ button.config {
   width: 100%;
 }
 
+button.upload {
+  font-size: 0.75rem;
+  width: 100%;
+}
+
 .controls {
   text-align: right;
 }
@@ -90,6 +101,12 @@ input.new-category {
 }
 
 input.new-event {
+  font-size: 1rem;
+  border-radius: 1rem;
+}
+
+.config input {
+  width: 70%;
   font-size: 1rem;
   border-radius: 1rem;
 }
@@ -167,5 +184,6 @@ button.delete {
 }
 
 .config-form .row {
+  padding: 0.5em;
   margin: 0.5em;
 }

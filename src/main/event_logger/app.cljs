@@ -136,6 +136,9 @@
       cats)))
   (clear-confirms! set-state))
 
+(defn upload! [config categories]
+  (prn "upload!" config categories))
+
 ;; define components using the `defnc` macro
 
 (defnc since-component [{:keys [category]}]
@@ -230,8 +233,9 @@
              :set-state set-state
              :item item
              :display "+"})
-         (d/label
-          {:on-click (partial open-category! state set-state (:id item))}
+         (d/span
+          {:class "category"
+           :on-click (partial open-category! state set-state (:id item))}
           (:name item))
          (when (= (:id item) (:display-category state))
            ($ category-details
@@ -307,7 +311,10 @@
                                              (set-state
                                               assoc
                                               :config
-                                              (dissoc (:new-config state) :remember))))}
+                                              (select-keys
+                                                (:new-config state)
+                                                [:host :user :password])))
+                                           (upload! (:new-config state) (:categories state)))}
                               "Upload"))))))))
 
 (defnc add-category-form [{:keys [state set-state]}]
