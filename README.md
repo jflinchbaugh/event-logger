@@ -3,6 +3,11 @@
 $ npx shadow-cljs watch frontend
 ```
 
+- Open a browser to http://localhost:3000/index.html
+- Everything else through http://localhost:3000/
+  will proxy to http://localhost:8000/ to find the storage server
+  and avoid CORS errors.
+
 ## Compile the App for Production
 ```
 $ npx shadow-cljs compile frontend

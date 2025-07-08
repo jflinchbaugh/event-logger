@@ -5,12 +5,15 @@
   "src/test"]
  :dependencies [[lilactown/helix "0.2.1"]
                 [tick "1.0"]
-                [http-kit "2.8.0"]
-                [cider/cider-nrepl "0.55.7"]
+                [cljs-http "0.1.48"]
+                [cider/cider-nrepl "0.56.0"]
                 [binaryage/devtools "1.0.7"]
                 [com.cognitect/transit-cljs  "0.8.280"]
                 [refactor-nrepl "3.11.0"]]
- :dev-http {3000 "public"}
+ :dev-http {3000 {:root "public"
+                  ;; allow proxy to server component in dev
+                  :proxy-url "http://localhost:8000/"
+                  }}
  :builds
  {
   :frontend

@@ -8,6 +8,7 @@
             [tick.core :as t]
             [cljs.pprint :as pp]
             [clojure.string :as str]
+            [cljs-http.client :as http]
             [clojure.edn :as edn]))
 
 ;; utilities
@@ -137,7 +138,15 @@
   (clear-confirms! set-state))
 
 (defn upload! [config categories]
-  (prn "upload!" config categories))
+  (prn "upload!" config categories)
+  @(http/post
+    (:host config)
+    {:with-credentials? false
+     :basic-auth {:username (:user config)
+                  :password (:password config)}
+     :content-type :text/plain
+     :body (str categories)}
+    ))
 
 ;; define components using the `defnc` macro
 
@@ -302,7 +311,7 @@
                                             (set-state
                                              assoc-in
                                              [:new-config :remember] (.. e -target -checked)))
-                               :value (get-in state [:new-config :remember])}))
+                               :checked true}))
                       (d/div {:class "row"}
                              (d/button
                               {:class "upload"
@@ -345,28 +354,28 @@
 
 (defnc app []
   (let [[state set-state] (hooks/use-state
-                           {:categories []
-                            :new-category ""})]
+                            {:categories []
+                             :new-category ""})]
     (hooks/use-effect
-     :once
-     (let [categories  (vec (edn/read-string (ls/get-item :categories)))
-           config  (edn/read-string (ls/get-item :config))
-           old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
-       (set-state assoc :categories
-                  (if (seq categories) categories (:categories old)))
-       (set-state assoc :config config)
-       (set-state assoc :new-config config)))
+      :once
+      (let [categories  (vec (edn/read-string (ls/get-item :categories)))
+            config  (edn/read-string (ls/get-item :config))
+            old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
+        (set-state assoc :categories
+          (if (seq categories) categories (:categories old)))
+        (set-state assoc :config config)
+        (set-state assoc :new-config config)))
     (hooks/use-effect
-     [state]
-     (ls/set-item! :version "1")
-     (ls/set-item! :config (pr-str (:config state)))
-     (ls/set-item! :categories (pr-str (:categories state))))
+      [state]
+      (ls/set-item! :version "1")
+      (ls/set-item! :config (pr-str (:config state)))
+      (ls/set-item! :categories (pr-str (:categories state))))
     (d/div
-     {:class "wrapper"}
-     ($ categories {:state state :set-state set-state})
-     ($ add-category-form {:state state :set-state set-state})
-     ($ debugger {:state state})
-     ($ config {:state state :set-state set-state}))))
+      {:class "wrapper"}
+      ($ categories {:state state :set-state set-state})
+      ($ add-category-form {:state state :set-state set-state})
+      ($ debugger {:state state})
+      ($ config {:state state :set-state set-state}))))
 
 ;; start your app with your favorite React render
 (defonce root (rdom/createRoot (js/document.getElementById "root")))
