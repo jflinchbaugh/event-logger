@@ -296,6 +296,7 @@
                              (d/input
                               {:name :password
                                :id :password
+                               :type "password"
                                :on-change (fn [e]
                                             (set-state
                                              assoc-in
