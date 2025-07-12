@@ -312,7 +312,7 @@
                                             (set-state
                                              assoc-in
                                              [:new-config :remember] (.. e -target -checked)))
-                               :checked true}))
+                               :checked (get-in state [:new-config :remember])}))
                       (d/div {:class "row"}
                              (d/button
                               {:class "upload"
@@ -375,8 +375,8 @@
       {:class "wrapper"}
       ($ categories {:state state :set-state set-state})
       ($ add-category-form {:state state :set-state set-state})
-      ($ debugger {:state state})
-      ($ config {:state state :set-state set-state}))))
+      ($ config {:state state :set-state set-state})
+      ($ debugger {:state state}))))
 
 ;; start your app with your favorite React render
 (defonce root (rdom/createRoot (js/document.getElementById "root")))
