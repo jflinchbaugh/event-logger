@@ -69,6 +69,18 @@ button {
   background-color: rgba(0, 140, 186, 1); /* Blue */
 }
 
+.response {
+  text-align: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  width: 100%;
+}
+
+.error {
+  color: rgba(255, 0, 50, 0.8);
+  font-weight: bold;
+}
+
 button.add {
   font-size: 0.75rem;
   width: 100%;

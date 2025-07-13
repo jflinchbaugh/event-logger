@@ -9,7 +9,8 @@
             [cljs.pprint :as pp]
             [clojure.string :as str]
             [cljs-http.client :as http]
-            [clojure.edn :as edn]))
+            [clojure.edn :as edn]
+            [cljs.core.async :refer [<! go]]))
 
 ;; utilities
 
@@ -137,16 +138,17 @@
       cats)))
   (clear-confirms! set-state))
 
-(defn upload! [config categories]
-  (prn "upload!" config categories)
-  @(http/post
-    (:host config)
-    {:with-credentials? false
-     :basic-auth {:username (:user config)
-                  :password (:password config)}
-     :content-type :text/plain
-     :body (str categories)}
-    ))
+(defn upload! [config categories set-state]
+  (go
+    (set-state assoc :upload-response
+               (<!
+                (http/post
+                 (:host config)
+                 {:with-credentials? false
+                  :basic-auth {:username (:user config)
+                               :password (:password config)}
+                  :content-type :text/plain
+                  :body (str {:date (now-str) :categories categories})})))))
 
 ;; define components using the `defnc` macro
 
@@ -322,10 +324,15 @@
                                               assoc
                                               :config
                                               (select-keys
-                                                (:new-config state)
-                                                [:host :user :password])))
-                                           (upload! (:new-config state) (:categories state)))}
-                              "Upload"))))))))
+                                               (:new-config state)
+                                               [:host :user :password])))
+                                           (upload! (:new-config state) (:categories state) set-state))}
+                              "Upload"))
+                      (d/div {:class "row"}
+                             (if (get-in state [:upload-response :success])
+                               (d/div {:class "response success"} "Success!")
+                               (d/div {:class "response error"}
+                                 (get-in state [:upload-response :body]))))))))))
 
 (defnc add-category-form [{:keys [state set-state]}]
   (d/div
@@ -355,28 +362,28 @@
 
 (defnc app []
   (let [[state set-state] (hooks/use-state
-                            {:categories []
-                             :new-category ""})]
+                           {:categories []
+                            :new-category ""})]
     (hooks/use-effect
-      :once
-      (let [categories  (vec (edn/read-string (ls/get-item :categories)))
-            config  (edn/read-string (ls/get-item :config))
-            old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
-        (set-state assoc :categories
-          (if (seq categories) categories (:categories old)))
-        (set-state assoc :config config)
-        (set-state assoc :new-config config)))
+     :once
+     (let [categories  (vec (edn/read-string (ls/get-item :categories)))
+           config  (edn/read-string (ls/get-item :config))
+           old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
+       (set-state assoc :categories
+                  (if (seq categories) categories (:categories old)))
+       (set-state assoc :config config)
+       (set-state assoc :new-config config)))
     (hooks/use-effect
-      [state]
-      (ls/set-item! :version "1")
-      (ls/set-item! :config (pr-str (:config state)))
-      (ls/set-item! :categories (pr-str (:categories state))))
+     [state]
+     (ls/set-item! :version "1")
+     (ls/set-item! :config (pr-str (:config state)))
+     (ls/set-item! :categories (pr-str (:categories state))))
     (d/div
-      {:class "wrapper"}
-      ($ categories {:state state :set-state set-state})
-      ($ add-category-form {:state state :set-state set-state})
-      ($ config {:state state :set-state set-state})
-      ($ debugger {:state state}))))
+     {:class "wrapper"}
+     ($ categories {:state state :set-state set-state})
+     ($ add-category-form {:state state :set-state set-state})
+     ($ config {:state state :set-state set-state})
+     ($ debugger {:state state}))))
 
 ;; start your app with your favorite React render
 (defonce root (rdom/createRoot (js/document.getElementById "root")))
