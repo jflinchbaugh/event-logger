@@ -332,7 +332,7 @@
                              (if (get-in state [:upload-response :success])
                                (d/div {:class "response success"} "Success!")
                                (d/div {:class "response error"}
-                                 (get-in state [:upload-response :body]))))))))))
+                                 (get-in state [:upload-response :error-text]))))))))))
 
 (defnc add-category-form [{:keys [state set-state]}]
   (d/div
