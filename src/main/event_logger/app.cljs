@@ -1,6 +1,7 @@
 (ns event-logger.app
   (:require [helix.core :refer [defnc $]]
             [helix.hooks :as hooks]
+            [taoensso.telemere :as tel]
             [event-logger.localstorage :as ls]
             [cognitect.transit :as transit]
             [helix.dom :as d]
@@ -139,6 +140,7 @@
   (clear-confirms! set-state))
 
 (defn upload! [config categories set-state]
+  (tel/log! :info "uploading")
   (go
     (set-state assoc :upload-response
                (<!
@@ -389,6 +391,7 @@
 (defonce root (rdom/createRoot (js/document.getElementById "root")))
 
 (defn render []
+  (tel/log! :info "rendering")
   (.render root ($ app)))
 
 (defn ^:export init []
