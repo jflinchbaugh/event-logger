@@ -139,10 +139,11 @@
       cats)))
   (clear-confirms! set-state))
 
-(defn upload! [config categories set-state]
+(defn upload!
+  [config categories set-state]
   (tel/log! :info "uploading")
   (go
-    (set-state assoc :upload-response
+    (set-state assoc :network-response
                (<!
                 (http/post
                  (:host config)
@@ -151,6 +152,36 @@
                                :password (:password config)}
                   :content-type :text/plain
                   :body (str {:date (now-str) :categories categories})})))))
+
+(defn download!
+  [config set-state]
+  (tel/log! :info "downloading")
+  (go (let [response
+            (-> config
+                :host
+                (http/get
+                 {:with-credentials? false
+                  :basic-auth {:username (:user config)
+                               :password (:password config)}
+                  :content-type :text/plain})
+                <!)
+            edn-response (-> response
+                           :body
+                           edn/read-string)]
+        (set-state assoc :network-response response)
+        (set-state assoc :categories (:categories edn-response))
+        )))
+
+(defn save-config!
+  [state set-state]
+  (when (get-in state [:new-config :remember])
+    (tel/log! :info "saving config")
+    (set-state
+     assoc
+     :config
+     (select-keys
+      (:new-config state)
+      [:host :user :password]))))
 
 ;; define components using the `defnc` macro
 
@@ -321,20 +352,21 @@
                              (d/button
                               {:class "upload"
                                :on-click (fn []
-                                           (when (get-in state [:new-config :remember])
-                                             (set-state
-                                              assoc
-                                              :config
-                                              (select-keys
-                                               (:new-config state)
-                                               [:host :user :password])))
+                                           (save-config! state set-state)
                                            (upload! (:new-config state) (:categories state) set-state))}
                               "Upload"))
                       (d/div {:class "row"}
-                             (if (get-in state [:upload-response :success])
+                             (d/button
+                              {:class "download"
+                               :on-click (fn []
+                                           (save-config! state set-state)
+                                           (download! (:new-config state) set-state))}
+                              "Download"))
+                      (d/div {:class "row"}
+                             (if (get-in state [:network-response :success])
                                (d/div {:class "response success"} "Success!")
                                (d/div {:class "response error"}
-                                 (get-in state [:upload-response :error-text]))))))))))
+                                      (get-in state [:network-response :error-text]))))))))))
 
 (defnc add-category-form [{:keys [state set-state]}]
   (d/div

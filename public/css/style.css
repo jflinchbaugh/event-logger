@@ -42,9 +42,8 @@ div.add {
 }
 
 label {
-  margin: 0;
-  padding-right: 1rem;
   font-size: 1rem;
+  display: block;
 }
 
 .category {
@@ -100,6 +99,13 @@ button.config {
 button.upload {
   font-size: 0.75rem;
   width: 100%;
+  margin-top: 0.5em;
+}
+
+button.download {
+  font-size: 0.75rem;
+  width: 100%;
+  margin-top: 0.5em;
 }
 
 .controls {
@@ -118,7 +124,7 @@ input.new-event {
 }
 
 .config input {
-  width: 70%;
+  width: 100%;
   font-size: 1rem;
   border-radius: 1rem;
 }
