@@ -169,7 +169,8 @@
                            :body
                            edn/read-string)]
         (set-state assoc :network-response response)
-        (set-state assoc :categories (:categories edn-response))
+        (when (:success response)
+          (set-state assoc :categories (:categories edn-response)))
         )))
 
 (defn save-config!
