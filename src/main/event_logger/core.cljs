@@ -350,6 +350,12 @@
                                :checked (get-in state [:new-config :remember])}))
                       (d/div {:class "row"}
                              (d/button
+                              {:class "save"
+                               :on-click (fn []
+                                           (save-config! state set-state))}
+                              "Save"))
+                      (d/div {:class "row"}
+                             (d/button
                               {:class "upload"
                                :on-click (fn []
                                            (save-config! state set-state)
