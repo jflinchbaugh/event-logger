@@ -145,7 +145,7 @@
     (set-state assoc :network-response
                (<!
                 (http/post
-                 (:host config)
+                 (:resource config)
                  {:with-credentials? false
                   :basic-auth {:username (:user config)
                                :password (:password config)}
@@ -157,7 +157,7 @@
   (tel/log! :info "downloading")
   (go (let [response
             (-> config
-                :host
+                :resource
                 (http/get
                  {:with-credentials? false
                   :basic-auth {:username (:user config)
@@ -165,23 +165,21 @@
                   :content-type :text/plain})
                 <!)
             edn-response (-> response
-                           :body
-                           edn/read-string)]
+                             :body
+                             edn/read-string)]
         (set-state assoc :network-response response)
         (when (:success response)
-          (set-state assoc :categories (:categories edn-response)))
-        )))
+          (set-state assoc :categories (:categories edn-response))))))
 
 (defn save-config!
   [state set-state]
-  (when (get-in state [:new-config :remember])
-    (tel/log! :info "saving config")
-    (set-state
-     assoc
-     :config
-     (select-keys
-      (:new-config state)
-      [:host :user :password]))))
+  (tel/log! :info "saving config")
+  (set-state
+   assoc
+   :config
+   (select-keys
+    (:new-config state)
+    [:resource :user :password])))
 
 ;; define components using the `defnc` macro
 
@@ -285,94 +283,81 @@
            ($ category-details
               {:set-state set-state :state state :item item}))))))))
 
-(defnc debugger [{:keys [state]}]
-  (let [[debugger set-debugger] (hooks/use-state false)]
+(defnc debugger [{:keys [state set-state]}]
+  (let [[show? set-show] (hooks/use-state false)]
     (d/div {:id "debug"}
            (d/button
             {:class "debug"
-             :on-click (fn [] (set-debugger not))}
+             :on-click (fn [] (set-show not))}
             "Debug")
-           (when debugger
-             (d/pre
-              (with-out-str (pp/pprint state)))))))
+           (when show?
+             (d/div {:class "wrapper"}
+                    (d/div {:class "row"}
+                           (d/button
+                            {:class "upload"
+                             :on-click (fn []
+                                         (upload! (:new-config state) (:categories state) set-state))}
+                            "Upload"))
+                    (d/div {:class "row"}
+                           (d/button
+                            {:class "download"
+                             :on-click (fn []
+                                         (download! (:new-config state) set-state))}
+                            "Download"))
+                    (d/div {:class "row"}
+                           (if (get-in state [:network-response :success])
+                             (d/div {:class "response success"} "Success!")
+                             (d/div {:class "response error"}
+                                    (get-in state [:network-response :error-text]))))
+                    (d/pre
+                     (with-out-str (pp/pprint state))))))))
 
 (defnc config [{:keys [state set-state]}]
-  (let [[show set-show] (hooks/use-state false)]
+  (let [[show? set-show] (hooks/use-state false)]
     (d/div {:id "config"}
            (d/button
             {:class "config"
              :on-click (fn [] (set-show not))}
             "Config")
-           (when show
-             (do
-               (d/div {:class "config"}
-                      (d/div {:class "row"}
-                             (d/label {:for :host} "Host")
-                             (d/input
-                              {:name :host
-                               :id :host
-                               :on-change (fn [e]
-                                            (set-state
-                                             assoc-in
-                                             [:new-config :host] (.. e -target -value)))
-                               :value (get-in state [:new-config :host])}))
-                      (d/div {:class "row"}
-                             (d/label {:for :user} "User")
-                             (d/input
-                              {:name :user
-                               :id :user
-                               :on-change (fn [e]
-                                            (set-state
-                                             assoc-in
-                                             [:new-config :user] (.. e -target -value)))
-                               :value (get-in state [:new-config :user])}))
-                      (d/div {:class "row"}
-                             (d/label {:for :password} "Password")
-                             (d/input
-                              {:name :password
-                               :id :password
-                               :type "password"
-                               :on-change (fn [e]
-                                            (set-state
-                                             assoc-in
-                                             [:new-config :password] (.. e -target -value)))
-                               :value (get-in state [:new-config :password])}))
-                      (d/div {:class "row"}
-                             (d/label {:for :remember} "Remember")
-                             (d/input
-                              {:type "checkbox"
-                               :name :remember
-                               :id :remember
-                               :on-change (fn [e]
-                                            (set-state
-                                             assoc-in
-                                             [:new-config :remember] (.. e -target -checked)))
-                               :checked (get-in state [:new-config :remember])}))
-                      (d/div {:class "row"}
-                             (d/button
-                              {:class "save"
-                               :on-click (fn []
-                                           (save-config! (assoc-in state [:new-config :remember] true) set-state))}
-                              "Save"))
-                      (d/div {:class "row"}
-                             (d/button
-                              {:class "upload"
-                               :on-click (fn []
-                                           (save-config! state set-state)
-                                           (upload! (:new-config state) (:categories state) set-state))}
-                              "Upload"))
-                      (d/div {:class "row"}
-                             (d/button
-                              {:class "download"
-                               :on-click (fn []
-                                           (save-config! state set-state)
-                                           (download! (:new-config state) set-state))}
-                              "Download"))
-                      (d/div {:class "row"}
-                             (if (get-in state [:network-response :success])
-                               (d/div {:class "response success"} "Success!")
-                               (d/div {:class "response error"}
-                                      (get-in state [:network-response :error-text]))))))))))
+           (when show?
+             (d/div {:class "config wrapper"}
+                    (d/div {:class "row"}
+                           (d/label {:for :resource} "Resource")
+                           (d/input
+                            {:name :resource
+                             :id :resource
+                             :on-change (fn [e]
+                                          (set-state
+                                           assoc-in
+                                           [:new-config :resource] (.. e -target -value)))
+                             :value (get-in state [:new-config :resource])}))
+                    (d/div {:class "row"}
+                           (d/label {:for :user} "User")
+                           (d/input
+                            {:name :user
+                             :id :user
+                             :on-change (fn [e]
+                                          (set-state
+                                           assoc-in
+                                           [:new-config :user] (.. e -target -value)))
+                             :value (get-in state [:new-config :user])}))
+                    (d/div {:class "row"}
+                           (d/label {:for :password} "Password")
+                           (d/input
+                            {:name :password
+                             :id :password
+                             :type "password"
+                             :on-change (fn [e]
+                                          (set-state
+                                           assoc-in
+                                           [:new-config :password] (.. e -target -value)))
+                             :value (get-in state [:new-config :password])}))
+                    (d/div {:class "row"}
+                           (d/button
+                            {:class "save"
+                             :on-click (fn []
+                                         (save-config! state set-state))}
+                            "Save Config")))))))
 
 (defnc add-category-form [{:keys [state set-state]}]
   (d/div
@@ -423,4 +408,4 @@
      ($ categories {:state state :set-state set-state})
      ($ add-category-form {:state state :set-state set-state})
      ($ config {:state state :set-state set-state})
-     ($ debugger {:state state}))))
+     ($ debugger {:state state :set-state set-state}))))
