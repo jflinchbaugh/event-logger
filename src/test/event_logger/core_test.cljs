@@ -1,9 +1,9 @@
-(ns event-logger.app-test
+(ns event-logger.core-test
   (:require [cljs.test :as t]
             ["@testing-library/react" :as tlr]
             [tick.core :as tc]
             [helix.core :refer [$]]
-            [event-logger.app :as sut]
+            [event-logger.core :as sut]
             [shadow.cljs.modern :refer (js-await)]
             [clojure.string :as str]))
 
