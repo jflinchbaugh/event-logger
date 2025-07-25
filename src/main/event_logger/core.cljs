@@ -352,7 +352,7 @@
                              (d/button
                               {:class "save"
                                :on-click (fn []
-                                           (save-config! state set-state))}
+                                           (save-config! (assoc-in state [:new-config :remember] true) set-state))}
                               "Save"))
                       (d/div {:class "row"}
                              (d/button
