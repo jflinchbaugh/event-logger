@@ -142,15 +142,32 @@
   [config categories set-state]
   (tel/log! :info "uploading")
   (go
-    (set-state assoc :network-response
-               (<!
-                (http/post
-                 (:resource config)
-                 {:with-credentials? false
-                  :basic-auth {:username (:user config)
-                               :password (:password config)}
-                  :content-type :text/plain
-                  :body (str {:date (now-str) :categories categories})})))))
+    (let [response
+          (-> config
+              :resource
+              (http/post
+               {:with-credentials? false
+                :basic-auth {:username (:user config)
+                             :password (:password config)}
+                :content-type :text/plain
+                :body (str {:date (now-str) :categories categories})})
+              <!)
+          edn-response (-> response
+                           :body
+                           edn/read-string)]
+      (set-state
+        assoc
+        :network-response
+        response)
+      (when
+          (and (:success response) (not (:categories edn-response)))
+          (set-state
+            (fn [m]
+              (assoc-in
+                (assoc-in m
+                  [:network-response :success] false)
+                [:network-response :error-text]
+                "Failed to upload! Check resource config.")))))))
 
 (defn download!
   [config set-state]
@@ -169,7 +186,17 @@
                              edn/read-string)]
         (set-state assoc :network-response response)
         (when (:success response)
-          (set-state assoc :categories (:categories edn-response))))))
+          (if (:categories edn-response)
+            (set-state
+              assoc
+              :categories (:categories edn-response))
+            (set-state
+              (fn [m]
+                (assoc-in
+                  (assoc-in m
+                    [:network-response :success] false)
+                  [:network-response :error-text]
+                  "Failed to download! Check resource config."))))))))
 
 (defn save-config!
   [state set-state]
