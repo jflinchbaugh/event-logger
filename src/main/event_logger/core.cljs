@@ -156,18 +156,18 @@
                            :body
                            edn/read-string)]
       (set-state
-        assoc
-        :network-response
-        response)
+       assoc
+       :network-response
+       response)
       (when
-          (and (:success response) (not (:categories edn-response)))
-          (set-state
-            (fn [m]
-              (assoc-in
-                (assoc-in m
-                  [:network-response :success] false)
-                [:network-response :error-text]
-                "Failed to upload! Check resource config.")))))))
+       (and (:success response) (not (:categories edn-response)))
+        (set-state
+         (fn [m]
+           (assoc-in
+            (assoc-in m
+                      [:network-response :success] false)
+            [:network-response :error-text]
+            "Failed to upload! Check resource config.")))))))
 
 (defn download!
   [config set-state]
@@ -188,15 +188,15 @@
         (when (:success response)
           (if (:categories edn-response)
             (set-state
-              assoc
-              :categories (:categories edn-response))
+             assoc
+             :categories (:categories edn-response))
             (set-state
-              (fn [m]
-                (assoc-in
-                  (assoc-in m
-                    [:network-response :success] false)
-                  [:network-response :error-text]
-                  "Failed to download! Check resource config."))))))))
+             (fn [m]
+               (assoc-in
+                (assoc-in m
+                          [:network-response :success] false)
+                [:network-response :error-text]
+                "Failed to download! Check resource config."))))))))
 
 (defn save-config!
   [state set-state]
@@ -312,32 +312,37 @@
 
 (defnc debugger [{:keys [state set-state]}]
   (let [[show? set-show] (hooks/use-state false)]
-    (d/div {:id "debug"}
-           (d/button
-            {:class "debug"
-             :on-click (fn [] (set-show not))}
-            "Debug")
-           (when show?
-             (d/div {:class "wrapper"}
-                    (d/div {:class "row"}
-                           (d/button
-                            {:class "upload"
-                             :on-click (fn []
-                                         (upload! (:new-config state) (:categories state) set-state))}
-                            "Upload"))
-                    (d/div {:class "row"}
-                           (d/button
-                            {:class "download"
-                             :on-click (fn []
-                                         (download! (:new-config state) set-state))}
-                            "Download"))
-                    (d/div {:class "row"}
-                           (if (get-in state [:network-response :success])
-                             (d/div {:class "response success"} "Success!")
-                             (d/div {:class "response error"}
-                                    (get-in state [:network-response :error-text]))))
-                    (d/pre
-                     (with-out-str (pp/pprint state))))))))
+    (d/div
+     {:id "debug"}
+     (d/button
+      {:class "debug"
+       :on-click (fn [] (set-show not))}
+      "Debug")
+     (when show?
+       (d/div
+        {:class "wrapper"}
+        (d/div
+         {:class "row"}
+         (d/button
+          {:class "upload"
+           :on-click (fn []
+                       (upload! (:new-config state) (:categories state) set-state))}
+          "Upload"))
+        (d/div
+         {:class "row"}
+         (d/button
+          {:class "download"
+           :on-click (fn []
+                       (download! (:new-config state) set-state))}
+          "Download"))
+        (d/div
+         {:class "row"}
+         (if (get-in state [:network-response :success])
+           (d/div {:class "response success"} "Success!")
+           (d/div {:class "response error"}
+                  (get-in state [:network-response :error-text]))))
+        (d/pre
+         (with-out-str (pp/pprint state))))))))
 
 (defnc config [{:keys [state set-state]}]
   (let [[show? set-show] (hooks/use-state false)]
