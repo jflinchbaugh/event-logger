@@ -20,11 +20,13 @@
   :frontend
   {:target :browser
    :asset-path "."
+   :compiler-options {:source-map true}
    :modules {:main {:init-fn event-logger.app/init}}}
 
   :test
   {:target :node-test
    :main      node/main
+   :compiler-options {:source-map true}
    :output-to "out/node-tests.js"
    :autorun true}
 
@@ -32,6 +34,7 @@
   {:target     :browser-test
    :test-dir   "out/browser/test"
    :autorun true
+   :compiler-options {:source-map true}
    :devtools   {:http-port 3021
                 :http-root "out/browser/test"}}
 
