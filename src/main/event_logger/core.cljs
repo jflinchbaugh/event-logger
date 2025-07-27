@@ -175,29 +175,29 @@
   (go
     (let [{:keys [resource user password]} config
           response
-            (-> resource
-                (http/get
-                 {:with-credentials? false
-                  :basic-auth {:username user
-                               :password password}
-                  :content-type :text/plain})
-                <!)
-            edn-response (-> response
-                             :body
-                             edn/read-string)]
-        (set-state assoc :network-response response)
-        (when (:success response)
-          (if (:categories edn-response)
-            (set-state
-             assoc
-             :categories (:categories edn-response))
-            (set-state
-             (fn [m]
-               (assoc-in
-                (assoc-in m
-                          [:network-response :success] false)
-                [:network-response :error-text]
-                "Failed to download! Check resource config."))))))))
+          (-> resource
+              (http/get
+               {:with-credentials? false
+                :basic-auth {:username user
+                             :password password}
+                :content-type :text/plain})
+              <!)
+          edn-response (-> response
+                           :body
+                           edn/read-string)]
+      (set-state assoc :network-response response)
+      (when (:success response)
+        (if (:categories edn-response)
+          (set-state
+           assoc
+           :categories (:categories edn-response))
+          (set-state
+           (fn [m]
+             (assoc-in
+              (assoc-in m
+                        [:network-response :success] false)
+              [:network-response :error-text]
+              "Failed to download! Check resource config."))))))))
 
 (defn save-config!
   [state set-state]
@@ -417,25 +417,39 @@
                  (add-category! state set-state)
                  (set-state assoc :new-category ""))}
     "Add")))
+(defn read-local-storage
+  []
+  (let [categories  (vec (edn/read-string (ls/get-item :categories)))
+        config  (edn/read-string (ls/get-item :config))
+        old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
+    {:categories (if (seq categories) categories (:categories old))
+     :config config
+     :new-config config}))
 
 (defnc app []
-  (let [[state set-state] (hooks/use-state
-                           {:categories []
-                            :new-category ""})]
-    (hooks/use-effect
-     :once
-     (let [categories  (vec (edn/read-string (ls/get-item :categories)))
-           config  (edn/read-string (ls/get-item :config))
-           old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
-       (set-state assoc :categories
-                  (if (seq categories) categories (:categories old)))
-       (set-state assoc :config config)
-       (set-state assoc :new-config config)))
+  (let [local-data (read-local-storage)
+        [state set-state] (hooks/use-state
+                           (assoc
+                            local-data
+                            :new-category ""))
+        [last-upload set-last-upload] (hooks/use-state
+                                       (select-keys local-data [:categories]))]
+    ;; update local storage
     (hooks/use-effect
      [state]
      (ls/set-item! :version "1")
      (ls/set-item! :config (pr-str (:config state)))
      (ls/set-item! :categories (pr-str (:categories state))))
+
+    ;; upload changes!
+    (hooks/use-effect
+     [state]
+     (tel/log! {:level :info :msg "state updated" :data {:current state :last-upload last-upload}})
+     (when-not
+      (= (:categories state) (:categories last-upload))
+       (upload! (:config state) (:categories state) set-state)
+       (set-last-upload assoc :categories (:categories state))))
+
     (d/div
      {:class "wrapper"}
      ($ categories {:state state :set-state set-state})
