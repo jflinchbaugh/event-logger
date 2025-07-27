@@ -18,12 +18,19 @@
 
 (defn read-local-storage
   []
-  (let [categories  (vec (edn/read-string (ls/get-item :categories)))
-        config  (edn/read-string (ls/get-item :config))
+  (let [categories (vec (edn/read-string (ls/get-item :categories)))
+        config (edn/read-string (ls/get-item :config))
         old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
     {:categories (if (seq categories) categories (:categories old))
      :config config
      :new-config config}))
+
+(defn write-local-storage!
+  [version config categories]
+  (ls/set-item! :version version)
+  (ls/set-item! :config config)
+  (ls/set-item! :categories categories))
+
 
 ;; date utilities
 (defn format-date-time [dt]
@@ -444,11 +451,9 @@
     ;; update local storage
     (hooks/use-effect
      [state]
-     (ls/set-item! :version "1")
-     (ls/set-item! :config (pr-str (:config state)))
-     (ls/set-item! :categories (pr-str (:categories state))))
+      (write-local-storage! "1" (:config state) (:categories state)))
 
-    ;; upload changes!
+;; upload changes!
     (hooks/use-effect
      [state]
      (when-not
