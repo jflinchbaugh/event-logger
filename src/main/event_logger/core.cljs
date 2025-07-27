@@ -444,7 +444,6 @@
     ;; upload changes!
     (hooks/use-effect
      [state]
-     (tel/log! {:level :info :msg "state updated" :data {:current state :last-upload last-upload}})
      (when-not
       (= (:categories state) (:categories last-upload))
        (upload! (:config state) (:categories state) set-state)
