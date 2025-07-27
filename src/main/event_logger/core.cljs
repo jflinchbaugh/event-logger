@@ -142,13 +142,13 @@
   [config categories set-state]
   (tel/log! :info "uploading")
   (go
-    (let [response
-          (-> config
-              :resource
+    (let [{:keys [resource user password]} config
+          response
+          (-> resource
               (http/post
                {:with-credentials? false
-                :basic-auth {:username (:user config)
-                             :password (:password config)}
+                :basic-auth {:username user
+                             :password password}
                 :content-type :text/plain
                 :body (str {:date (now-str) :categories categories})})
               <!)
@@ -172,13 +172,14 @@
 (defn download!
   [config set-state]
   (tel/log! :info "downloading")
-  (go (let [response
-            (-> config
-                :resource
+  (go
+    (let [{:keys [resource user password]} config
+          response
+            (-> resource
                 (http/get
                  {:with-credentials? false
-                  :basic-auth {:username (:user config)
-                               :password (:password config)}
+                  :basic-auth {:username user
+                               :password password}
                   :content-type :text/plain})
                 <!)
             edn-response (-> response
