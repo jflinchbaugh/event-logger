@@ -12,11 +12,20 @@
             [clojure.edn :as edn]
             [cljs.core.async :refer [<! go]]))
 
-;; utilities
-
+;; storage utilities
 (defn json->clj [x]
   (transit/read (transit/reader :json) x))
 
+(defn read-local-storage
+  []
+  (let [categories  (vec (edn/read-string (ls/get-item :categories)))
+        config  (edn/read-string (ls/get-item :config))
+        old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
+    {:categories (if (seq categories) categories (:categories old))
+     :config config
+     :new-config config}))
+
+;; date utilities
 (defn format-date-time [dt]
   (t/format :iso-local-date-time dt))
 
@@ -50,93 +59,7 @@
       (> 2 days) "1 day ago"
       :else (str days " days ago"))))
 
-;; confirmations utils
-(defn clear-confirms!
-  "clear all confirmations as you nav through the app"
-  [set-state]
-  (set-state dissoc :confirm))
-
-(defn set-confirm!
-  "set a confirmation state"
-  [set-state name data]
-  (set-state assoc-in [:confirm name] data))
-
-(defn get-confirm
-  "get a confirmation state"
-  [state name]
-  (get-in state [:confirm name]))
-
-;; event utils
-(defn is-new-event?
-  "is this event new, and not already in the list?"
-  [existing-events event]
-  (empty? (filter (partial = event) existing-events)))
-
-(defn adding-event?
-  "is there an event being added?"
-  [state]
-  (-> state :adding-event nil? not))
-
-;; action
-
-(defn open-category! [state set-state item-id]
-  (clear-confirms! set-state)
-  (set-state dissoc :adding-event)
-  (if (= item-id (:display-category state))
-    (set-state dissoc :display-category)
-    (set-state assoc :display-category item-id)))
-
-(defn add-category! [state set-state]
-  (let [new-cat-name (str/replace
-                      (->> state :new-category str/trim)
-                      #" +" " ")
-        new-cat-id (str/replace
-                    (str/lower-case new-cat-name)
-                    #" " "-")
-        existing-categories (set (map :id (:categories state)))]
-    (when (not (str/blank? new-cat-name))
-      (if (existing-categories new-cat-id)
-        (open-category! state set-state new-cat-id)
-        (set-state
-         update :categories
-         conj {:id new-cat-id :name new-cat-name})))))
-
-(defn delete-category! [state set-state item-id]
-  (set-state update :categories
-             (comp vec (partial remove (comp #{item-id} :id))))
-  (open-category! state set-state nil))
-
-(defn add-event! [state set-state id]
-  (if (adding-event? state)
-    (let [time (:adding-event state)
-          idx (.indexOf (map :id (:categories state)) id)
-          existing-events (get-in state [:categories idx :events])]
-      (when (is-new-event? existing-events time)
-        (set-state update-in [:categories idx :events] conj time)
-        (set-state dissoc :adding-event)))
-    (do
-      (when (not= (:display-category state) id)
-        (open-category! state set-state id))
-      (set-state assoc :adding-event (now-str)))))
-
-(defn open-delete-event! [set-state id event]
-  (set-confirm! set-state :delete-event {:id id :event event}))
-
-(defn delete-event! [state set-state event]
-  (set-state
-   update
-   :categories
-   (fn [cats]
-     (mapv
-      (fn [cat]
-        (if (not= (:id (get-confirm state :delete-event)) (:id cat))
-          cat
-          (update
-           cat
-           :events
-           (fn [events] (remove #{event} events)))))
-      cats)))
-  (clear-confirms! set-state))
+;; http actions
 
 (defn upload!
   [config categories set-state]
@@ -198,6 +121,98 @@
                         [:network-response :success] false)
               [:network-response :error-text]
               "Failed to download! Check resource config."))))))))
+
+;; confirmations utils
+
+(defn clear-confirms!
+  "clear all confirmations as you nav through the app"
+  [set-state]
+  (set-state dissoc :confirm))
+
+(defn set-confirm!
+  "set a confirmation state"
+  [set-state name data]
+  (set-state assoc-in [:confirm name] data))
+
+(defn get-confirm
+  "get a confirmation state"
+  [state name]
+  (get-in state [:confirm name]))
+
+;; event utils
+
+(defn is-new-event?
+  "is this event new, and not already in the list?"
+  [existing-events event]
+  (empty? (filter (partial = event) existing-events)))
+
+(defn adding-event?
+  "is there an event being added?"
+  [state]
+  (-> state :adding-event nil? not))
+
+;; category actions
+
+(defn open-category! [state set-state item-id]
+  (clear-confirms! set-state)
+  (set-state dissoc :adding-event)
+  (if (= item-id (:display-category state))
+    (set-state dissoc :display-category)
+    (set-state assoc :display-category item-id)))
+
+(defn add-category! [state set-state]
+  (let [new-cat-name (str/replace
+                      (->> state :new-category str/trim)
+                      #" +" " ")
+        new-cat-id (str/replace
+                    (str/lower-case new-cat-name)
+                    #" " "-")
+        existing-categories (set (map :id (:categories state)))]
+    (when (not (str/blank? new-cat-name))
+      (if (existing-categories new-cat-id)
+        (open-category! state set-state new-cat-id)
+        (set-state
+         update :categories
+         conj {:id new-cat-id :name new-cat-name})))))
+
+(defn delete-category! [state set-state item-id]
+  (set-state update :categories
+             (comp vec (partial remove (comp #{item-id} :id))))
+  (open-category! state set-state nil))
+
+;; event actions
+
+(defn add-event! [state set-state id]
+  (if (adding-event? state)
+    (let [time (:adding-event state)
+          idx (.indexOf (map :id (:categories state)) id)
+          existing-events (get-in state [:categories idx :events])]
+      (when (is-new-event? existing-events time)
+        (set-state update-in [:categories idx :events] conj time)
+        (set-state dissoc :adding-event)))
+    (do
+      (when (not= (:display-category state) id)
+        (open-category! state set-state id))
+      (set-state assoc :adding-event (now-str)))))
+
+(defn open-delete-event! [set-state id event]
+  (set-confirm! set-state :delete-event {:id id :event event}))
+
+(defn delete-event! [state set-state event]
+  (set-state
+   update
+   :categories
+   (fn [cats]
+     (mapv
+      (fn [cat]
+        (if (not= (:id (get-confirm state :delete-event)) (:id cat))
+          cat
+          (update
+           cat
+           :events
+           (fn [events] (remove #{event} events)))))
+      cats)))
+  (clear-confirms! set-state))
 
 (defn save-config!
   [state set-state]
@@ -417,14 +432,6 @@
                  (add-category! state set-state)
                  (set-state assoc :new-category ""))}
     "Add")))
-(defn read-local-storage
-  []
-  (let [categories  (vec (edn/read-string (ls/get-item :categories)))
-        config  (edn/read-string (ls/get-item :config))
-        old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
-    {:categories (if (seq categories) categories (:categories old))
-     :config config
-     :new-config config}))
 
 (defnc app []
   (let [local-data (read-local-storage)
