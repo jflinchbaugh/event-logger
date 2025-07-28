@@ -31,7 +31,6 @@
   (ls/set-item! :config config)
   (ls/set-item! :categories categories))
 
-
 ;; date utilities
 (defn format-date-time [dt]
   (t/format :iso-local-date-time dt))
@@ -347,6 +346,12 @@
         (d/div
          {:class "row"}
          (d/button
+          {:class "reload"
+           :on-click (fn [] (.reload js/location))}
+          "Reload"))
+        (d/div
+         {:class "row"}
+         (d/button
           {:class "upload"
            :on-click (fn []
                        (upload! (:new-config state) (:categories state) set-state))}
@@ -451,7 +456,7 @@
     ;; update local storage
     (hooks/use-effect
      [state]
-      (write-local-storage! "1" (:config state) (:categories state)))
+     (write-local-storage! "1" (:config state) (:categories state)))
 
 ;; upload changes!
     (hooks/use-effect
