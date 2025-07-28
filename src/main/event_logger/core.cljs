@@ -458,7 +458,7 @@
      [state]
      (write-local-storage! "1" (:config state) (:categories state)))
 
-;; upload changes!
+    ;; upload changes!
     (hooks/use-effect
      [state]
      (when-not
