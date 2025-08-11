@@ -1,9 +1,9 @@
 const CACHE_NAME = 'event-logger-cache-v1';
 const urlsToCache = [
-  '.',
   'index.html',
   'css/style.css',
-  'js/main.js'
+  'js/main.js',
+  'event-logger.png'
 ];
 
 self.addEventListener('install', event => {
