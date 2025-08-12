@@ -467,6 +467,10 @@
                  (set-state assoc :new-category ""))}
     "Add")))
 
+(defnc title-bar []
+  (d/div {:class "title-bar"}
+    (d/h1 "Event Logger")))
+
 (defnc app []
   (let [local-data (read-local-storage)
         [state set-state] (hooks/use-state
@@ -488,10 +492,11 @@
        (upload! (:config state) (:categories state) set-state)
        (set-last-upload assoc :categories (:categories state))))
 
-    (d/div
-     {:class "wrapper"}
-     ($ categories {:state state :set-state set-state})
-     ($ network-response-display {:state state :set-state set-state})
-     ($ add-category-form {:state state :set-state set-state})
-     ($ config {:state state :set-state set-state})
-     ($ debugger {:state state :set-state set-state}))))
+    [($ title-bar)
+     (d/div
+       {:class "wrapper"}
+       ($ categories {:state state :set-state set-state})
+       ($ network-response-display {:state state :set-state set-state})
+       ($ add-category-form {:state state :set-state set-state})
+       ($ config {:state state :set-state set-state})
+       ($ debugger {:state state :set-state set-state}))]))

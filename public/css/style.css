@@ -217,3 +217,16 @@ button.delete {
   padding: 0.5em;
   margin: 0.5em;
 }
+
+.title-bar {
+  background-color: rgba(0, 140, 186, 1);
+  width: 100%;
+  padding: 0;
+  text-align: left;
+}
+
+.title-bar h1 {
+  color: white;
+  font-size: 0.8rem;
+  padding-left: 1rem;
+}
