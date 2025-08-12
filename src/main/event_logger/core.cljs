@@ -16,11 +16,23 @@
 (defn json->clj [x]
   (transit/read (transit/reader :json) x))
 
+(defn clean-storage
+  [v]
+  (when (seqable? v) v))
+
+(defn storage->edn
+  [k]
+  (-> k ls/get-item edn/read-string clean-storage))
+
 (defn read-local-storage
   []
-  (let [categories (vec (edn/read-string (ls/get-item :categories)))
-        config (edn/read-string (ls/get-item :config))
-        old (json->clj (ls/get-item "[\"~#'\",\"~:event-logger\"]"))]
+  (let [categories (-> :categories storage->edn vec)
+        config (storage->edn :config)
+        old (->
+              "[\"~#'\",\"~:event-logger\"]"
+              ls/get-item
+              json->clj
+              clean-storage)]
     {:categories (if (seq categories) categories (:categories old))
      :config config
      :new-config config}))
