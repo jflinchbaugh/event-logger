@@ -17,12 +17,15 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
+  console.log('requested ' + event.request);
   event.respondWith(
     caches.match(event.request)
       .then(response => {
         if (response) {
+          console.log('hit: ' + event.request)
           return response;
         }
+        console.log('miss: ' + event.request)
         return fetch(event.request);
       })
   );

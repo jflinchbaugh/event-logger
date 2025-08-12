@@ -11,7 +11,7 @@
   (= (.-protocol location) "https:"))
 
 (defn register-service-worker []
-  (when (and js/ServiceWorker (https? js/location))
+  (when (and js/ServiceWorker #_(https? js/location))
     (.addEventListener js/window "load"
       (fn []
         (-> (.-serviceWorker js/navigator)
