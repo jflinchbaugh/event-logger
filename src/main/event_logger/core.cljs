@@ -344,15 +344,21 @@
            ($ category-details
               {:set-state set-state :state state :item item}))))))))
 
-(defnc network-response-display [{:keys [state]}]
-  (when (or (get-in state [:network-response :success])
-            (get-in state [:network-response :error-text]))
-    (d/div
-     {:class "row"}
-     (if (get-in state [:network-response :success])
-       (d/div {:class "response success"} "Uploaded!")
-       (d/div {:class "response error"}
-         (str "Failed Upload: "(get-in state [:network-response :error-text])))))))
+(defnc network-response-display [{:keys [state set-state]}]
+  (let [network-response (get state :network-response)]
+    (hooks/use-effect
+     [network-response]
+     (when network-response
+       (js/setTimeout
+         (partial set-state assoc :network-response nil)
+        2000)))
+    (when network-response
+      (d/div
+       {:class "row"}
+       (if (get-in state [:network-response :success])
+         (d/div {:class "response success"} "Uploaded!")
+         (d/div {:class "response error"}
+                (str "Failed Upload: "(get-in state [:network-response :error-text]))))))))
 
 (defnc debugger [{:keys [state set-state]}]
   (let [[show? set-show] (hooks/use-state false)]
@@ -484,8 +490,8 @@
 
     (d/div
      {:class "wrapper"}
-     ($ network-response-display {:state state})
      ($ categories {:state state :set-state set-state})
+     ($ network-response-display {:state state :set-state set-state})
      ($ add-category-form {:state state :set-state set-state})
      ($ config {:state state :set-state set-state})
      ($ debugger {:state state :set-state set-state}))))
