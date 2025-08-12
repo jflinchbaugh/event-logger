@@ -344,6 +344,16 @@
            ($ category-details
               {:set-state set-state :state state :item item}))))))))
 
+(defnc network-response-display [{:keys [state]}]
+  (when (or (get-in state [:network-response :success])
+            (get-in state [:network-response :error-text]))
+    (d/div
+     {:class "row"}
+     (if (get-in state [:network-response :success])
+       (d/div {:class "response success"} "Uploaded!")
+       (d/div {:class "response error"}
+         (str "Failed Upload: "(get-in state [:network-response :error-text])))))))
+
 (defnc debugger [{:keys [state set-state]}]
   (let [[show? set-show] (hooks/use-state false)]
     (d/div
@@ -375,12 +385,6 @@
            :on-click (fn []
                        (download! (:new-config state) set-state))}
           "Download"))
-        (d/div
-         {:class "row"}
-         (if (get-in state [:network-response :success])
-           (d/div {:class "response success"} "Success!")
-           (d/div {:class "response error"}
-                  (get-in state [:network-response :error-text]))))
         (d/pre
          (with-out-str (pp/pprint state))))))))
 
@@ -480,6 +484,7 @@
 
     (d/div
      {:class "wrapper"}
+     ($ network-response-display {:state state})
      ($ categories {:state state :set-state set-state})
      ($ add-category-form {:state state :set-state set-state})
      ($ config {:state state :set-state set-state})
