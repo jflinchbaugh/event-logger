@@ -358,7 +358,9 @@
        (if (get-in state [:network-response :success])
          (d/div {:class "response success"} "Uploaded!")
          (d/div {:class "response error"}
-                (str "Failed Upload: "(get-in state [:network-response :error-text]))))))))
+                (str
+                  "Failed Upload: "
+                  (get-in state [:network-response :error-text]))))))))
 
 (defnc debugger [{:keys [state set-state]}]
   (let [[show? set-show] (hooks/use-state false)]
