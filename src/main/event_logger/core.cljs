@@ -87,10 +87,10 @@
 ;; http actions
 
 (defn upload!
-  [config categories set-state]
+  [force config categories set-state]
   (tel/log! {:level :info :msg "uploading" :data config})
   (let [{:keys [resource user password]} config]
-    (when (configured? resource user password)
+    (when (or force (configured? resource user password))
       (go
         (let [response (->
                         resource
@@ -359,7 +359,7 @@
      (when network-response
        (js/setTimeout
         (partial set-state assoc :network-response nil)
-        2000)))
+        3000)))
     (when network-response
       (d/div
        {:class "row"}
@@ -391,8 +391,12 @@
          {:class "row"}
          (d/button
           {:class "upload"
-           :on-click (fn []
-                       (upload! (:new-config state) (:categories state) set-state))}
+           :on-click (partial
+                       upload!
+                       true
+                       (:new-config state)
+                       (:categories state)
+                       set-state)}
           "Upload"))
         (d/div
          {:class "row"}
@@ -499,7 +503,7 @@
      [state]
      (when-not
       (= (:categories state) (:categories last-upload))
-       (upload! (:config state) (:categories state) set-state)
+       (upload! false (:config state) (:categories state) set-state)
        (set-last-upload assoc :categories (:categories state))))
 
     (<>
