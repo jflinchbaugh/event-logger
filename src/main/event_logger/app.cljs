@@ -7,11 +7,8 @@
 ;; start your app with your favorite React render
 (defonce root (rdom/createRoot (js/document.getElementById "root")))
 
-(defn https? [location]
-  (= (.-protocol location) "https:"))
-
 (defn register-service-worker []
-  (when (and js/ServiceWorker #_(https? js/location))
+  (when js/ServiceWorker
     (.addEventListener js/window "load"
       (fn []
         (-> (.-serviceWorker js/navigator)
