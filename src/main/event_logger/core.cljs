@@ -1,5 +1,5 @@
 (ns event-logger.core
-  (:require [helix.core :refer [defnc $]]
+  (:require [helix.core :refer [defnc $ <>]]
             [helix.hooks :as hooks]
             [taoensso.telemere :as tel]
             [event-logger.localstorage :as ls]
@@ -492,11 +492,13 @@
        (upload! (:config state) (:categories state) set-state)
        (set-last-upload assoc :categories (:categories state))))
 
-    [($ title-bar)
-     (d/div
-       {:class "wrapper"}
-       ($ categories {:state state :set-state set-state})
-       ($ network-response-display {:state state :set-state set-state})
-       ($ add-category-form {:state state :set-state set-state})
-       ($ config {:state state :set-state set-state})
-       ($ debugger {:state state :set-state set-state}))]))
+    (<>
+      ($ title-bar)
+      (d/div
+        {:class "wrapper"
+         :key "div.wrapper"}
+        ($ categories {:state state :set-state set-state})
+        ($ network-response-display {:state state :set-state set-state})
+        ($ add-category-form {:state state :set-state set-state})
+        ($ config {:state state :set-state set-state})
+        ($ debugger {:state state :set-state set-state})))))
