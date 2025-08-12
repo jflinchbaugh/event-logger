@@ -29,10 +29,10 @@
   (let [categories (-> :categories storage->edn vec)
         config (storage->edn :config)
         old (->
-              "[\"~#'\",\"~:event-logger\"]"
-              ls/get-item
-              json->clj
-              clean-storage)]
+             "[\"~#'\",\"~:event-logger\"]"
+             ls/get-item
+             json->clj
+             clean-storage)]
     {:categories (if (seq categories) categories (:categories old))
      :config config
      :new-config config}))
@@ -77,38 +77,46 @@
       (> 2 days) "1 day ago"
       :else (str days " days ago"))))
 
+(defn configured?
+  [resource user password]
+  (and
+   (not (str/blank? resource))
+   (not (str/blank? user))
+   (not (str/blank? password))))
+
 ;; http actions
 
 (defn upload!
   [config categories set-state]
-  (tel/log! :info "uploading")
-  (go
-    (let [{:keys [resource user password]} config
-          response
-          (-> resource
-              (http/post
-               {:with-credentials? false
-                :basic-auth {:username user
-                             :password password}
-                :content-type :text/plain
-                :body (str {:date (now-str) :categories categories})})
-              <!)
-          edn-response (-> response
-                           :body
-                           edn/read-string)]
-      (set-state
-       assoc
-       :network-response
-       response)
-      (when
-       (and (:success response) (not (:categories edn-response)))
-        (set-state
-         (fn [m]
-           (assoc-in
-            (assoc-in m
-                      [:network-response :success] false)
-            [:network-response :error-text]
-            "Failed to upload! Check resource config.")))))))
+  (tel/log! {:level :info :msg "uploading" :data config})
+  (let [{:keys [resource user password]} config]
+    (when (configured? resource user password)
+      (go
+        (let [response (->
+                        resource
+                        (http/post
+                         {:with-credentials? false
+                          :basic-auth {:username user
+                                       :password password}
+                          :content-type :text/plain
+                          :body (str {:date (now-str) :categories categories})})
+                        <!)
+              edn-response (-> response
+                               :body
+                               edn/read-string)]
+          (set-state
+           assoc
+           :network-response
+           response)
+          (when
+           (and (:success response) (not (:categories edn-response)))
+            (set-state
+             (fn [m]
+               (assoc-in
+                (assoc-in m
+                          [:network-response :success] false)
+                [:network-response :error-text]
+                "Failed to upload! Check resource config.")))))))))
 
 (defn download!
   [config set-state]
@@ -350,7 +358,7 @@
      [network-response]
      (when network-response
        (js/setTimeout
-         (partial set-state assoc :network-response nil)
+        (partial set-state assoc :network-response nil)
         2000)))
     (when network-response
       (d/div
@@ -359,8 +367,8 @@
          (d/div {:class "response success"} "Uploaded!")
          (d/div {:class "response error"}
                 (str
-                  "Failed Upload: "
-                  (get-in state [:network-response :error-text]))))))))
+                 "Failed Upload: "
+                 (get-in state [:network-response :error-text]))))))))
 
 (defnc debugger [{:keys [state set-state]}]
   (let [[show? set-show] (hooks/use-state false)]
@@ -471,7 +479,7 @@
 
 (defnc title-bar []
   (d/div {:class "title-bar"}
-    (d/h1 "Event Logger")))
+         (d/h1 "Event Logger")))
 
 (defnc app []
   (let [local-data (read-local-storage)
@@ -495,12 +503,12 @@
        (set-last-upload assoc :categories (:categories state))))
 
     (<>
-      ($ title-bar)
-      (d/div
-        {:class "wrapper"
-         :key "div.wrapper"}
-        ($ categories {:state state :set-state set-state})
-        ($ network-response-display {:state state :set-state set-state})
-        ($ add-category-form {:state state :set-state set-state})
-        ($ config {:state state :set-state set-state})
-        ($ debugger {:state state :set-state set-state})))))
+     ($ title-bar)
+     (d/div
+      {:class "wrapper"
+       :key "div.wrapper"}
+      ($ categories {:state state :set-state set-state})
+      ($ network-response-display {:state state :set-state set-state})
+      ($ add-category-form {:state state :set-state set-state})
+      ($ config {:state state :set-state set-state})
+      ($ debugger {:state state :set-state set-state})))))
