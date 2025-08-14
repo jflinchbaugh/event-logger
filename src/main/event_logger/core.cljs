@@ -367,7 +367,7 @@
          (d/div {:class "response success"} "Uploaded!")
          (d/div {:class "response error"}
                 (str
-                 "Failed Upload: "
+                 "Failed to contact server: "
                  (get-in state [:network-response :error-text]))))))))
 
 (defnc debugger [{:keys [state set-state]}]
