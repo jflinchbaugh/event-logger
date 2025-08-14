@@ -89,6 +89,7 @@
 (defn upload!
   [force config categories set-state]
   (tel/log! {:level :info :msg "uploading" :data config})
+  (set-state assoc :network-action "Upload")
   (let [{:keys [resource user password]} config]
     (when (or force (configured? resource user password))
       (go
@@ -121,6 +122,7 @@
 (defn download!
   [config set-state]
   (tel/log! :info "downloading")
+  (set-state assoc :network-action "Download")
   (go
     (let [{:keys [resource user password]} config
           response
@@ -364,10 +366,13 @@
       (d/div
        {:class "row"}
        (if (get-in state [:network-response :success])
-         (d/div {:class "response success"} "Uploaded!")
+         (d/div
+           {:class "response success"}
+           (str (:network-action state) " succeeded!"))
          (d/div {:class "response error"}
                 (str
-                 "Failed to contact server: "
+                  (:network-action state)
+                 " failed: "
                  (get-in state [:network-response :error-text]))))))))
 
 (defnc debugger [{:keys [state set-state]}]
