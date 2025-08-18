@@ -10,7 +10,10 @@
             [clojure.string :as str]
             [cljs-http.client :as http]
             [clojure.edn :as edn]
-            [cljs.core.async :refer [<! go]]))
+            [cljs.core.async :refer [<! go]])
+  (:require-macros [event-logger.build-info :as build-info]))
+
+(def build-date (build-info/build-date))
 
 ;; storage utilities
 (defn json->clj [x]
@@ -367,11 +370,11 @@
        {:class "row"}
        (if (get-in state [:network-response :success])
          (d/div
-           {:class "response success"}
-           (str (:network-action state) " succeeded!"))
+          {:class "response success"}
+          (str (:network-action state) " succeeded!"))
          (d/div {:class "response error"}
                 (str
-                  (:network-action state)
+                 (:network-action state)
                  " failed: "
                  (get-in state [:network-response :error-text]))))))))
 
@@ -397,11 +400,11 @@
          (d/button
           {:class "upload"
            :on-click (partial
-                       upload!
-                       true
-                       (:new-config state)
-                       (:categories state)
-                       set-state)}
+                      upload!
+                      true
+                      (:new-config state)
+                      (:categories state)
+                      set-state)}
           "Upload"))
         (d/div
          {:class "row"}
@@ -411,7 +414,10 @@
                        (download! (:new-config state) set-state))}
           "Download"))
         (d/pre
-         (with-out-str (pp/pprint state))))))))
+         (with-out-str (pp/pprint state)))
+        (d/div
+         {:class "row"}
+         (d/div "Build Date: " build-date)))))))
 
 (defnc config [{:keys [state set-state]}]
   (let [[show? set-show] (hooks/use-state false)]
