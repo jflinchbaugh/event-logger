@@ -1,7 +1,4 @@
-const urlParams = new URLSearchParams(self.location.search);
-const BUILD_ID = urlParams.get('v') || 'v0'; // Default to v0 if not found
-const CACHE_NAME = `event-logger-cache-${BUILD_ID}`;
-
+const CACHE_NAME = 'event-logger-cache-v1';
 const urlsToCache = [
   'index.html',
   'css/style.css',

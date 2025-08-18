@@ -4,8 +4,6 @@
             [taoensso.telemere :as tel]
             ["react-dom/client" :as rdom]))
 
-(def ^:export BUILD_ID nil)
-
 ;; start your app with your favorite React render
 (defonce root (rdom/createRoot (js/document.getElementById "root")))
 
@@ -14,7 +12,7 @@
     (.addEventListener js/window "load"
       (fn []
         (-> (.-serviceWorker js/navigator)
-          (.register (str "service-worker.js?v=" BUILD_ID))
+          (.register "service-worker.js")
           (.then (fn [registration]
                    (tel/log!
                      :info
