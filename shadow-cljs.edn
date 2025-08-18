@@ -20,7 +20,8 @@
   :frontend
   {:target :browser
    :asset-path "."
-   :modules {:main {:init-fn event-logger.app/init}}}
+   :modules {:main {:init-fn event-logger.app/init}}
+   :compiler-options {:closure-defines {event-logger.app/BUILD_ID (System/currentTimeMillis)}}}}
 
   :test
   {:target :node-test
