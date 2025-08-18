@@ -367,16 +367,18 @@
         3000)))
     (when network-response
       (d/div
-       {:class "row"}
-       (if (get-in state [:network-response :success])
-         (d/div
-          {:class "response success"}
-          (str (:network-action state) " succeeded!"))
-         (d/div {:class "response error"}
-                (str
-                 (:network-action state)
-                 " failed: "
-                 (get-in state [:network-response :error-text]))))))))
+       {:class "modal-overlay"}
+       (d/div
+        {:class "modal-content"}
+        (if (get-in state [:network-response :success])
+          (d/div
+           {:class "response success"}
+           (str (:network-action state) " succeeded!"))
+          (d/div {:class "response error"}
+                 (str
+                  (:network-action state)
+                  " failed: "
+                  (get-in state [:network-response :error-text])))))))))
 
 (defnc debugger [{:keys [state set-state]}]
   (let [[show? set-show] (hooks/use-state false)]
@@ -523,7 +525,7 @@
       {:class "wrapper"
        :key "div.wrapper"}
       ($ categories {:state state :set-state set-state})
-      ($ network-response-display {:state state :set-state set-state})
       ($ add-category-form {:state state :set-state set-state})
       ($ config {:state state :set-state set-state})
-      ($ debugger {:state state :set-state set-state})))))
+      ($ debugger {:state state :set-state set-state})
+      ($ network-response-display {:state state :set-state set-state})))))
