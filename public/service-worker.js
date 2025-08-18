@@ -16,14 +16,20 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
-  console.log('requested ' + event.request);
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request);
+        // If network request is successful, clone the response and put it in cache
+        const responseToCache = response.clone();
+        caches.open(CACHE_NAME)
+          .then(cache => {
+            cache.put(event.request, responseToCache);
+          });
+        return response;
+      })
+      .catch(() => {
+        // If network request fails, try to get from cache
+        return caches.match(event.request);
       })
   );
 });
