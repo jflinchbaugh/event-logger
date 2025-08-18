@@ -10,7 +10,6 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Opened cache');
         return cache.addAll(urlsToCache);
       })
   );
@@ -22,10 +21,8 @@ self.addEventListener('fetch', event => {
     caches.match(event.request)
       .then(response => {
         if (response) {
-          console.log('hit: ' + event.request)
           return response;
         }
-        console.log('miss: ' + event.request)
         return fetch(event.request);
       })
   );
