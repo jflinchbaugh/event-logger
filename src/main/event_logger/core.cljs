@@ -364,10 +364,11 @@
      (when network-response
        (js/setTimeout
         (partial set-state assoc :network-response nil)
-        3000)))
+        3000))) ; Keep the timeout
     (when network-response
       (d/div
-       {:class "modal-overlay"}
+       {:class "modal-overlay"
+        :on-click #(set-state assoc :network-response nil)} ; Add click handler
        (d/div
         {:class "modal-content"}
         (if (get-in state [:network-response :success])
