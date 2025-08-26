@@ -294,15 +294,15 @@
        :on-click (partial set-confirm! set-state :delete-category item-id)}
       "X"))))
 
-(defnc event-detail
-  [{:keys [item event expanded-fn? expand-action delete-action]}]
+(defnc event-details
+  [{:keys [event expanded-fn? expand-action delete-action]}]
   (d/li
    (d/span
     {:class "event"
      :on-click (partial expand-action event)}
     event)
    (when
-    (expanded-fn? item event)
+    (expanded-fn? event)
      (d/button
       {:class "delete"
        :on-click (partial delete-action event)}
@@ -336,13 +336,13 @@
                             sort)]
             (doall
              (for [event (reverse events)]
-               ($ event-detail
-                  {:item item
-                   :key (str (:id item) "-" event)
+               ($ event-details
+                  {:key (str (:id item) "-" event)
                    :event event
                    :expanded-fn? (partial
                                    event-expanded?
-                                   state)
+                                   state
+                                   item)
                    :expand-action (partial
                                    open-delete-event!
                                    set-state
@@ -352,7 +352,6 @@
                                     state
                                     set-state
                                     event)}))))
-
           ($ category-controls
              {:state state :set-state set-state :item-id (:id item)}))))
 
