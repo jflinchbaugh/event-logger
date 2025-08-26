@@ -314,18 +314,17 @@
    {:class "event"
     :on-click (partial expand-action event)}
    (d/span {:class "date-time"} (:date-time event))
-   (when (:duration event)
-     (<>
-      " "
-      (d/span {:class "duration"} (str "(" (:duration event) ")"))))
    (when
     (expanded-fn? event)
-     (d/div
+     (d/span
       {:class "actions"}
+       " "
       (d/button
        {:class "delete"
         :on-click (partial delete-action event)}
-       "X")))))
+       "X")))
+   (when (:duration event)
+     (d/div {:class "duration"} (str "(" (:duration event) ")")))))
 
 (defnc category-details [{:keys [set-state state item]}]
   (d/div {:class "details" :id (str "details-" (:id item))}
