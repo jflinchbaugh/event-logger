@@ -27,16 +27,16 @@
 (t/deftest test-describe-diff
   (t/are [expected value unit]
          (= expected (sut/describe-diff (tc/new-duration value unit)))
-    "0 seconds ago"  -1 :seconds
-    "0 seconds ago"   0 :seconds
-    "1 second ago"    1 :seconds
-    "2 seconds ago"   2 :seconds
-    "1 minute ago"    1 :minutes
-    "2 minutes ago"   2 :minutes
-    "1 hour ago"      1 :hours
-    "2 hours ago"     2 :hours
-    "1 day ago"       1 :days
-    "2 days ago"      2 :days))
+    "0 seconds"  -1 :seconds
+    "0 seconds"   0 :seconds
+    "1 second"    1 :seconds
+    "2 seconds"   2 :seconds
+    "1 minute"    1 :minutes
+    "2 minutes"   2 :minutes
+    "1 hour"      1 :hours
+    "2 hours"     2 :hours
+    "1 day"       1 :days
+    "2 days"      2 :days))
 
 (t/deftest test-confirms
   (t/testing "clear"
@@ -76,8 +76,8 @@
     (t/testing "clicking the button exposes debug data"
       (t/is (.click tlr/fireEvent btn))
       (t/is
-       (= ["Debug" "{:things :ok}"]
-          (-> container .-container .-innerText str/split-lines))))
+       (= ["Debug" "Reload" "Upload" "Download" "{:things :ok}"]
+          (->> container .-container .-innerText str/split-lines (take 5)))))
 
     (t/testing "clicking the button hides debug data"
       (t/is (.click tlr/fireEvent btn))
