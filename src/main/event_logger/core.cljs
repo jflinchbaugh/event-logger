@@ -233,6 +233,7 @@
 ;; event actions
 
 (defn add-event! [state set-state id]
+  (clear-confirms! set-state)
   (if (adding-event? state)
     (let [time (:adding-event state)
           idx (.indexOf (map :id (:categories state)) id)
@@ -245,8 +246,14 @@
         (open-category! state set-state id))
       (set-state assoc :adding-event (now-str)))))
 
-(defn open-delete-event! [set-state id event]
-  (set-confirm! set-state :delete-event {:id id :event (:date-time event)}))
+(defn open-delete-event! [state set-state id event]
+  (let [new-confirmation {:id id :event (:date-time event)}]
+    (set-confirm!
+     set-state
+     :delete-event
+     (when
+         (not= new-confirmation (get-confirm state :delete-event))
+       new-confirmation))))
 
 (defn delete-event! [state set-state event]
   (set-state
@@ -318,7 +325,7 @@
     (expanded-fn? event)
      (d/span
       {:class "actions"}
-       " "
+      " "
       (d/button
        {:class "delete"
         :on-click (partial delete-action event)}
@@ -365,6 +372,7 @@
                                     item)
                      :expand-action (partial
                                      open-delete-event!
+                                     state
                                      set-state
                                      (:id item))
                      :delete-action (partial
