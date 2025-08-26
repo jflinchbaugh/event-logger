@@ -184,8 +184,8 @@
 
 (defn event-expanded? [state item event]
   (=
-    {:id (:id item) :event event}
-    (get-confirm state :delete-event)))
+   {:id (:id item) :event event}
+   (get-confirm state :delete-event)))
 
 ;; category actions
 
@@ -294,6 +294,20 @@
        :on-click (partial set-confirm! set-state :delete-category item-id)}
       "X"))))
 
+(defnc event-detail
+  [{:keys [item event expanded-fn? expand-action delete-action]}]
+  (d/li
+   (d/span
+    {:class "event"
+     :on-click (partial expand-action event)}
+    event)
+   (when
+    (expanded-fn? item event)
+     (d/button
+      {:class "delete"
+       :on-click (partial delete-action event)}
+      "X"))))
+
 (defnc category-details [{:keys [set-state state item]}]
   (d/div {:class "details" :id (str "details-" (:id item))}
          ($ since-component {:category item})
@@ -316,28 +330,29 @@
                 :display "Save"})))
          (d/ul
           {:class "events"}
-           (let [events (->> item
-                          :events
-                          (map normalize-date-str)
-                          sort)]
-             (doall
-               (for [event (reverse events)]
-                 (d/li
-                   {:key (str (:id item) "-" event)}
-                   (d/span
-                     {:class "event"
-                      :on-click (partial
-                                  open-delete-event!
-                                  set-state
-                                  (:id item)
-                                  event)}
-                     event)
-                   (when
-                       (event-expanded? state item event)
-                     (d/button
-                       {:class "delete"
-                        :on-click (partial delete-event! state set-state event)}
-                       "X"))))))
+          (let [events (->> item
+                            :events
+                            (map normalize-date-str)
+                            sort)]
+            (doall
+             (for [event (reverse events)]
+               ($ event-detail
+                  {:item item
+                   :key (str (:id item) "-" event)
+                   :event event
+                   :expanded-fn? (partial
+                                   event-expanded?
+                                   state)
+                   :expand-action (partial
+                                   open-delete-event!
+                                   set-state
+                                   (:id item))
+                   :delete-action (partial
+                                    delete-event!
+                                    state
+                                    set-state
+                                    event)}))))
+
           ($ category-controls
              {:state state :set-state set-state :item-id (:id item)}))))
 
