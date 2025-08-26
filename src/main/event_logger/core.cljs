@@ -70,15 +70,15 @@
         minutes (t/minutes diff)
         seconds (t/seconds diff)]
     (cond
-      (> 1 seconds) "0 seconds ago"
-      (> 2 seconds) "1 second ago"
-      (> 1 minutes) (str seconds " seconds ago")
-      (> 2 minutes) "1 minute ago"
-      (> 1 hours) (str minutes " minutes ago")
-      (> 2 hours) "1 hour ago"
-      (> 1 days) (str hours " hours ago")
-      (> 2 days) "1 day ago"
-      :else (str days " days ago"))))
+      (> 1 seconds) "0 seconds"
+      (> 2 seconds) "1 second"
+      (> 1 minutes) (str seconds " seconds")
+      (> 2 minutes) "1 minute"
+      (> 1 hours) (str minutes " minutes")
+      (> 2 hours) "1 hour"
+      (> 1 days) (str hours " hours")
+      (> 2 days) "1 day"
+      :else (str days " days"))))
 
 (defn configured?
   [resource user password]
@@ -182,6 +182,11 @@
   [state]
   (-> state :adding-event nil? not))
 
+(defn event-expanded? [state item event]
+  (=
+    {:id (:id item) :event event}
+    (get-confirm state :delete-event)))
+
 ;; category actions
 
 (defn open-category! [state set-state item-id]
@@ -268,7 +273,8 @@
         last-event
         t/date-time
         (t/between now)
-        describe-diff)))))
+        describe-diff
+        (str " ago"))))))
 
 (defnc add-button [{:keys [state set-state item display]}]
   (d/button
@@ -310,30 +316,28 @@
                 :display "Save"})))
          (d/ul
           {:class "events"}
-          (doall
-           (for [event (->> item
-                            :events
-                            (map normalize-date-str)
-                            sort
-                            reverse)]
-             (d/li
-              {:key (str (:id item) "-" event)}
-              (d/span
-               {:class "event"
-                :on-click (partial
-                           open-delete-event!
-                           set-state
-                           (:id item)
-                           event)}
-               event)
-              (when
-               (=
-                {:id (:id item) :event event}
-                (get-confirm state :delete-event))
-                (d/button
-                 {:class "delete"
-                  :on-click (partial delete-event! state set-state event)}
-                 "X")))))
+           (let [events (->> item
+                          :events
+                          (map normalize-date-str)
+                          sort)]
+             (doall
+               (for [event (reverse events)]
+                 (d/li
+                   {:key (str (:id item) "-" event)}
+                   (d/span
+                     {:class "event"
+                      :on-click (partial
+                                  open-delete-event!
+                                  set-state
+                                  (:id item)
+                                  event)}
+                     event)
+                   (when
+                       (event-expanded? state item event)
+                     (d/button
+                       {:class "delete"
+                        :on-click (partial delete-event! state set-state event)}
+                       "X"))))))
           ($ category-controls
              {:state state :set-state set-state :item-id (:id item)}))))
 
