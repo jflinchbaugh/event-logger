@@ -72,12 +72,9 @@
     (cond
       (> 1 seconds) "0 seconds"
       (> 2 seconds) "1 second"
-      (> 1 minutes) (str seconds " seconds")
-      (> 2 minutes) "1 minute"
-      (> 1 hours) (str minutes " minutes")
-      (> 2 hours) "1 hour"
-      (> 1 days) (str hours " hours")
-      (> 2 days) "1 day"
+      (>= 120 seconds) (str seconds " seconds")
+      (>= 120 minutes) (str minutes " minutes")
+      (>= 48 hours) (str hours " hours")
       :else (str days " days"))))
 
 (defn average-duration [events]
@@ -237,7 +234,7 @@
       (if (existing-categories new-cat-id)
         (open-category! state set-state new-cat-id)
         (set-state update :categories
-                conj {:id new-cat-id :name new-cat-name})))))
+                   conj {:id new-cat-id :name new-cat-name})))))
 
 (defn delete-category! [state set-state item-id]
   (set-state update :categories
@@ -359,9 +356,9 @@
 (defnc category-details [{:keys [set-state state item]}]
   (d/div
    {:class "details" :id (str "details-" (:id item))}
-    (d/div {:class "event-header"}
-      ($ average-component {:category item})
-      ($ since-component {:category item}))
+   (d/div {:class "event-header"}
+          ($ average-component {:category item})
+          ($ since-component {:category item}))
    (when (:adding-event state)
      (d/div
       (d/input
@@ -392,19 +389,19 @@
             {:key (str (:id item) "-" event)
              :event event
              :expanded-fn? (partial
-                             event-expanded?
-                             state
-                             item)
+                            event-expanded?
+                            state
+                            item)
              :expand-action (partial
-                              open-delete-event!
-                              state
-                              set-state
-                              (:id item))
+                             open-delete-event!
+                             state
+                             set-state
+                             (:id item))
              :delete-action (partial
-                              delete-event!
-                              state
-                              set-state
-                              event)}))))
+                             delete-event!
+                             state
+                             set-state
+                             event)}))))
     ($ category-controls
        {:state state :set-state set-state :item-id (:id item)}))))
 

@@ -17,25 +17,29 @@
 
 (t/deftest test-normalize-date-str
   (t/is (= "2024-01-01T01:01:01"
-           (sut/normalize-date-str "2024-01-01T01:01:01")))
+          (sut/normalize-date-str "2024-01-01T01:01:01")))
   (t/is (= "2024-01-01T01:01:01"
-           (sut/normalize-date-str "2024-01-01T01:01:01.033")))
+          (sut/normalize-date-str "2024-01-01T01:01:01.033")))
   (t/is (= "2024-01-01T01:01:00"
-           (sut/normalize-date-str "2024-01-01T01:01"))))
+          (sut/normalize-date-str "2024-01-01T01:01"))))
 
 (t/deftest test-describe-diff
   (t/are [expected value unit]
-         (= expected (sut/describe-diff (tc/new-duration value unit)))
-    "0 seconds"  -1 :seconds
+      (= expected (sut/describe-diff (tc/new-duration value unit)))
+    "0 seconds"   -1 :seconds
     "0 seconds"   0 :seconds
     "1 second"    1 :seconds
     "2 seconds"   2 :seconds
-    "1 minute"    1 :minutes
-    "2 minutes"   2 :minutes
-    "1 hour"      1 :hours
-    "2 hours"     2 :hours
-    "1 day"       1 :days
-    "2 days"      2 :days))
+    "60 seconds"  60 :seconds
+    "120 seconds" 120 :seconds
+    "2 minutes"   121 :seconds
+    "60 minutes"  60 :minutes
+    "120 minutes" 120 :minutes
+    "2 hours"     121 :minutes
+    "24 hours"    24 :hours
+    "48 hours"    48 :hours
+    "2 days"      49 :hours
+    ))
 
 (t/deftest test-confirms
   (t/testing "clear"
