@@ -80,6 +80,25 @@
       (> 2 days) "1 day"
       :else (str days " days"))))
 
+(defn average-duration [events]
+  (if (> 2 (count events))
+    nil
+    (->
+      (t/between
+        (t/date-time
+          (first events))
+        (t/date-time
+          (last events)))
+      t/seconds
+      (/ (dec (count events)))
+      (t/new-duration :seconds)
+      describe-diff)))
+
+(comment
+  (average ["2025-08-24T00:00:00" "" "2025-08-25T00:00:00"])
+
+  (t/new-duration (t/seconds #time/duration "PT24H") :seconds))
+
 (defn configured?
   [resource user password]
   (and
@@ -221,9 +240,8 @@
     (when (not (str/blank? new-cat-name))
       (if (existing-categories new-cat-id)
         (open-category! state set-state new-cat-id)
-        (set-state
-         update :categories
-         conj {:id new-cat-id :name new-cat-name})))))
+        (update :categories
+                conj {:id new-cat-id :name new-cat-name})))))
 
 (defn delete-category! [state set-state item-id]
   (set-state update :categories
@@ -252,7 +270,7 @@
      set-state
      :delete-event
      (when
-         (not= new-confirmation (get-confirm state :delete-event))
+      (not= new-confirmation (get-confirm state :delete-event))
        new-confirmation))))
 
 (defn delete-event! [state set-state event]

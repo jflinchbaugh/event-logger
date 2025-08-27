@@ -87,8 +87,7 @@
   (let [container (tlr/render ($ sut/app))
         add-btn (-> container (.getByText "Add"))
         debug-btn (-> container (.getByText "Debug"))
-        category-input (-> container (.getByPlaceholderText "New Category"))
-        ]
+        category-input (-> container (.getByPlaceholderText "New Category"))]
     (t/testing "there are basic components and no categories"
       (t/is add-btn)
       (t/is debug-btn)
@@ -99,5 +98,23 @@
       #_(.change tlr/fireEvent category-input {:target {:value "mine"}})
       #_(-> container (.getByValue "mine"))
       (.click tlr/fireEvent debug-btn)
-      #_(t/is (= "thing" (-> container .-container .-innerText)))
-      )))
+      #_(t/is (= "thing" (-> container .-container .-innerText))))))
+
+(t/deftest test-average-duration
+  (t/testing "no data gives nil"
+    (t/is (nil? (sut/average-duration nil)))
+    (t/is (nil? (sut/average-duration [])))
+    (t/is (nil? (sut/average-duration ["1992-01-01T01:01:01"]))))
+  (t/testing "averages"
+    (t/is (= "1 second" (sut/average-duration ["1992-01-01T01:01:01"
+                                      "1992-01-01T01:01:02"])))
+    (t/is (= "1 second" (sut/average-duration ["1992-01-01T01:01:01"
+                                      "1992-01-01T01:01:02"
+                                      "1992-01-01T01:01:03"])))
+
+    (t/is (= "2 seconds" (sut/average-duration ["1992-01-01T01:01:01"
+                                      "1992-01-01T01:01:02"
+                                      "1992-01-01T01:01:05"])))
+    (t/is (= "4 hours" (sut/average-duration ["1992-01-01T01:01:01"
+                                     "1992-01-01T01:01:02"
+                                     "1992-01-01T09:01:01"])))))
