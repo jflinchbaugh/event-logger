@@ -84,20 +84,16 @@
   (if (> 2 (count events))
     nil
     (->
-      (t/between
-        (t/date-time
-          (first events))
-        (t/date-time
-          (last events)))
-      t/seconds
-      (/ (dec (count events)))
-      (t/new-duration :seconds)
-      describe-diff)))
-
-(comment
-  (average ["2025-08-24T00:00:00" "" "2025-08-25T00:00:00"])
-
-  (t/new-duration (t/seconds #time/duration "PT24H") :seconds))
+     (t/between
+      (t/date-time
+       (first events))
+      (t/date-time
+       (last events)))
+     t/seconds
+     (/ (dec (count events)))
+     int
+     (t/new-duration :seconds)
+     describe-diff)))
 
 (defn configured?
   [resource user password]
@@ -240,7 +236,7 @@
     (when (not (str/blank? new-cat-name))
       (if (existing-categories new-cat-id)
         (open-category! state set-state new-cat-id)
-        (update :categories
+        (set-state update :categories
                 conj {:id new-cat-id :name new-cat-name})))))
 
 (defn delete-category! [state set-state item-id]
@@ -301,6 +297,15 @@
 
 ;; define components using the `defnc` macro
 
+(defnc average-component [{:keys [category]}]
+  (->>
+   category
+   :events
+   sort
+   average-duration
+   (str "Avg: ")
+   (d/div {:class "average-duration"})))
+
 (defnc since-component [{:keys [category]}]
   (let [last-event (-> category :events sort last)
         [now set-now] (hooks/use-state (t/date-time))]
@@ -352,54 +357,57 @@
      (d/div {:class "duration"} (str "(" (:duration event) ")")))))
 
 (defnc category-details [{:keys [set-state state item]}]
-  (d/div {:class "details" :id (str "details-" (:id item))}
-         ($ since-component {:category item})
-         (when (:adding-event state)
-           (d/div
-            (d/input
-             {:class "new-event"
-              :type "datetime-local"
-              :enterKeyHint "done"
-              :value (:adding-event state)
-              :name :new-event
-              :on-change #(set-state
-                           assoc
-                           :adding-event
-                           (.. % -target -value))})
-            ($ add-button
-               {:state state
-                :set-state set-state
-                :item item
-                :display "Save"})))
-         (d/ul
-          {:class "events"}
-          (let [events (->> item
-                            :events
-                            (map normalize-date-str)
-                            sort
-                            add-durations)]
-            (doall
-             (for [event (reverse events)]
-               (do
-                 ($ event-details
-                    {:key (str (:id item) "-" event)
-                     :event event
-                     :expanded-fn? (partial
-                                    event-expanded?
-                                    state
-                                    item)
-                     :expand-action (partial
-                                     open-delete-event!
-                                     state
-                                     set-state
-                                     (:id item))
-                     :delete-action (partial
-                                     delete-event!
-                                     state
-                                     set-state
-                                     event)})))))
-          ($ category-controls
-             {:state state :set-state set-state :item-id (:id item)}))))
+  (d/div
+   {:class "details" :id (str "details-" (:id item))}
+    (d/div {:class "event-header"}
+      ($ average-component {:category item})
+      ($ since-component {:category item}))
+   (when (:adding-event state)
+     (d/div
+      (d/input
+       {:class "new-event"
+        :type "datetime-local"
+        :enterKeyHint "done"
+        :value (:adding-event state)
+        :name :new-event
+        :on-change #(set-state
+                     assoc
+                     :adding-event
+                     (.. % -target -value))})
+      ($ add-button
+         {:state state
+          :set-state set-state
+          :item item
+          :display "Save"})))
+   (d/ul
+    {:class "events"}
+    (let [events (->> item
+                      :events
+                      (map normalize-date-str)
+                      sort
+                      add-durations)]
+      (doall
+       (for [event (reverse events)]
+         (do
+           ($ event-details
+              {:key (str (:id item) "-" event)
+               :event event
+               :expanded-fn? (partial
+                              event-expanded?
+                              state
+                              item)
+               :expand-action (partial
+                               open-delete-event!
+                               state
+                               set-state
+                               (:id item))
+               :delete-action (partial
+                               delete-event!
+                               state
+                               set-state
+                               event)})))))
+    ($ category-controls
+       {:state state :set-state set-state :item-id (:id item)}))))
 
 (defnc categories [{:keys [state set-state]}]
   (let [categories (:categories state)]

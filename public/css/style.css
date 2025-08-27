@@ -174,9 +174,17 @@ button:hover {
   padding: 0 0.5rem;
 }
 
+.details .event-header {
+  display: flex;
+  justify-content: space-between;
+}
+
 .details .time-since {
   font-size: 0.75rem;
-  text-align: right;
+}
+
+.details .average-duration {
+  font-size: 0.75rem;
 }
 
 button.delete {
