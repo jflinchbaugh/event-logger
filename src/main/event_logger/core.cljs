@@ -388,24 +388,23 @@
                       add-durations)]
       (doall
        (for [event (reverse events)]
-         (do
-           ($ event-details
-              {:key (str (:id item) "-" event)
-               :event event
-               :expanded-fn? (partial
-                              event-expanded?
+         ($ event-details
+            {:key (str (:id item) "-" event)
+             :event event
+             :expanded-fn? (partial
+                             event-expanded?
+                             state
+                             item)
+             :expand-action (partial
+                              open-delete-event!
                               state
-                              item)
-               :expand-action (partial
-                               open-delete-event!
-                               state
-                               set-state
-                               (:id item))
-               :delete-action (partial
-                               delete-event!
-                               state
-                               set-state
-                               event)})))))
+                              set-state
+                              (:id item))
+             :delete-action (partial
+                              delete-event!
+                              state
+                              set-state
+                              event)}))))
     ($ category-controls
        {:state state :set-state set-state :item-id (:id item)}))))
 

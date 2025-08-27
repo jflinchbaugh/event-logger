@@ -4,7 +4,6 @@
             [tick.core :as tc]
             [helix.core :refer [$]]
             [event-logger.core :as sut]
-            [shadow.cljs.modern :refer (js-await)]
             [clojure.string :as str]))
 
 (defn setup-root [f]
