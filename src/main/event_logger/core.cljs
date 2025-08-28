@@ -252,7 +252,8 @@
     (->
       lst
       (remove-at-index from)
-      (insert-at-index to item))))
+      (insert-at-index to item)
+      vec)))
 
 (defn move-category [state from to]
   (update-in state [:categories] move from to))
