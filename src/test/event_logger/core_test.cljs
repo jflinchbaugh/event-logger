@@ -17,15 +17,15 @@
 
 (t/deftest test-normalize-date-str
   (t/is (= "2024-01-01T01:01:01"
-          (sut/normalize-date-str "2024-01-01T01:01:01")))
+           (sut/normalize-date-str "2024-01-01T01:01:01")))
   (t/is (= "2024-01-01T01:01:01"
-          (sut/normalize-date-str "2024-01-01T01:01:01.033")))
+           (sut/normalize-date-str "2024-01-01T01:01:01.033")))
   (t/is (= "2024-01-01T01:01:00"
-          (sut/normalize-date-str "2024-01-01T01:01"))))
+           (sut/normalize-date-str "2024-01-01T01:01"))))
 
 (t/deftest test-describe-diff
   (t/are [expected value unit]
-      (= expected (sut/describe-diff (tc/new-duration value unit)))
+         (= expected (sut/describe-diff (tc/new-duration value unit)))
     "0 seconds"   -1 :seconds
     "0 seconds"   0 :seconds
     "1 second"    1 :seconds
@@ -38,8 +38,7 @@
     "2 hours"     121 :minutes
     "24 hours"    24 :hours
     "48 hours"    48 :hours
-    "2 days"      49 :hours
-    ))
+    "2 days"      49 :hours))
 
 (t/deftest test-confirms
   (t/testing "clear"
@@ -110,14 +109,29 @@
     (t/is (nil? (sut/average-duration ["1992-01-01T01:01:01"]))))
   (t/testing "averages"
     (t/is (= "1 second" (sut/average-duration ["1992-01-01T01:01:01"
-                                      "1992-01-01T01:01:02"])))
+                                               "1992-01-01T01:01:02"])))
     (t/is (= "1 second" (sut/average-duration ["1992-01-01T01:01:01"
-                                      "1992-01-01T01:01:02"
-                                      "1992-01-01T01:01:03"])))
+                                               "1992-01-01T01:01:02"
+                                               "1992-01-01T01:01:03"])))
 
     (t/is (= "2 seconds" (sut/average-duration ["1992-01-01T01:01:01"
-                                      "1992-01-01T01:01:02"
-                                      "1992-01-01T01:01:05"])))
+                                                "1992-01-01T01:01:02"
+                                                "1992-01-01T01:01:05"])))
     (t/is (= "4 hours" (sut/average-duration ["1992-01-01T01:01:01"
-                                     "1992-01-01T01:01:02"
-                                     "1992-01-01T09:01:01"])))))
+                                              "1992-01-01T01:01:02"
+                                              "1992-01-01T09:01:01"])))))
+
+(t/deftest test-move-category
+  (t/testing "move"
+    (t/is (= {:categories ["a" "b" "c"]}
+             (sut/move-category {:categories ["a" "b" "c"]} 0 0)))
+    (t/is (= {:categories ["b" "a" "c"]}
+             (sut/move-category {:categories ["a" "b" "c"]} 0 1)))
+    (t/is (= {:categories ["b" "c" "a"]}
+             (sut/move-category {:categories ["a" "b" "c"]} 0 2)))
+    (t/is (= {:categories ["c" "a" "b"]}
+             (sut/move-category {:categories ["a" "b" "c"]} 2 0)))
+    (t/is (= {:categories ["a" "c" "b"]}
+             (sut/move-category {:categories ["a" "b" "c"]} 2 1)))
+    (t/is (= {:categories ["a" "b" "c"]}
+             (sut/move-category {:categories ["a" "b" "c"]} 2 2)))))

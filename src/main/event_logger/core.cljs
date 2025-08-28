@@ -241,6 +241,22 @@
              (comp vec (partial remove (comp #{item-id} :id))))
   (open-category! state set-state nil))
 
+(defn remove-at-index [lst index]
+  (concat (take index lst) (drop (inc index) lst)))
+
+(defn insert-at-index [lst index element]
+  (concat (take index lst) (list element) (drop index lst)))
+
+(defn move [lst from to]
+  (let [item (nth lst from)]
+    (->
+      lst
+      (remove-at-index from)
+      (insert-at-index to item))))
+
+(defn move-category [state from to]
+  (update-in state [:categories] move from to))
+
 ;; event actions
 
 (defn add-event! [state set-state id]
@@ -405,13 +421,54 @@
     ($ category-controls
        {:state state :set-state set-state :item-id (:id item)}))))
 
+
+
+(comment
+  "
+  const handleDragEnd = (e) => {
+                                e.target.classList.remove('dragging');
+                                const newItems = [...items];
+                                const draggedItemContent = newItems[dragItem.current];
+                                newItems.splice(dragItem.current, 1);
+                                newItems.splice(dragOverItem.current, 0, draggedItemContent);
+                                dragItem.current = null;
+                                dragOverItem.current = null;
+                                setItems(newItems);
+                                };
+")
+
 (defnc categories [{:keys [state set-state]}]
-  (let [categories (:categories state)]
+  (let [categories (:categories state)
+        drag-item (hooks/use-ref nil)
+        drag-over-item (hooks/use-ref nil)
+        handle-drag-start (fn [e position]
+                            (reset! drag-item position)
+                            (set! (.. e -dataTransfer -effectAllowed) "move")
+                            (.. e -dataTransfer (setData "text/html" (.. e -target)))
+                            (.. e -target -classList (add "dragging")))
+        handle-drag-enter (fn [e position]
+                            (reset! drag-over-item position))
+
+        handle-drag-end (fn [e]
+                          (.. e -target -classList (remove #{"dragging"}))
+                          ;; alter items
+                          (set-state move-category
+                            @drag-item
+                            @drag-over-item)
+                          (reset! drag-item nil)
+                          (reset! drag-over-item nil))]
+
     (d/ul
      (doall
-      (for [item categories]
+       (for [[index item] (map-indexed (fn [i v] [i v]) categories)]
         (d/li
-         {:key (:id item)}
+         {:key (:id item)
+          :draggable true
+          :on-drag-start (fn [e] (handle-drag-start e index))
+          :on-drag-enter (fn [e] (handle-drag-enter e index))
+          :on-drag-end handle-drag-end
+          :on-drag-over (fn [e] (.. e preventDefault))
+          }
          ($ add-button
             {:state state
              :set-state set-state
