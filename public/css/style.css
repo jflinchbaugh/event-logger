@@ -260,3 +260,8 @@ button.delete {
   max-width: 80%;
   text-align: center;
 }
+
+.dragging {
+  background-color: pink;
+  border-radius: 1rem;
+}

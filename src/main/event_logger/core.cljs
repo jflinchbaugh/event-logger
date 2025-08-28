@@ -421,22 +421,6 @@
     ($ category-controls
        {:state state :set-state set-state :item-id (:id item)}))))
 
-
-
-(comment
-  "
-  const handleDragEnd = (e) => {
-                                e.target.classList.remove('dragging');
-                                const newItems = [...items];
-                                const draggedItemContent = newItems[dragItem.current];
-                                newItems.splice(dragItem.current, 1);
-                                newItems.splice(dragOverItem.current, 0, draggedItemContent);
-                                dragItem.current = null;
-                                dragOverItem.current = null;
-                                setItems(newItems);
-                                };
-")
-
 (defnc categories [{:keys [state set-state]}]
   (let [categories (:categories state)
         drag-item (hooks/use-ref nil)
@@ -450,8 +434,7 @@
                             (reset! drag-over-item position))
 
         handle-drag-end (fn [e]
-                          (.. e -target -classList (remove #{"dragging"}))
-                          ;; alter items
+                          (.. e -target -classList (remove "dragging"))
                           (set-state move-category
                             @drag-item
                             @drag-over-item)
