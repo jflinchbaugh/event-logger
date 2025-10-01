@@ -177,6 +177,8 @@ button:hover {
 .details .event-header {
   display: flex;
   justify-content: space-between;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
 }
 
 .details .time-since {
@@ -262,6 +264,6 @@ button.delete {
 }
 
 .dragging {
-  background-color: pink;
+  background-color: ;
   border-radius: 1rem;
 }

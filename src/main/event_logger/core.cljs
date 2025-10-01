@@ -10,7 +10,8 @@
             [clojure.string :as str]
             [cljs-http.client :as http]
             [clojure.edn :as edn]
-            [cljs.core.async :refer [<! go]])
+            [cljs.core.async :refer [<! go]]
+            [goog.string :refer [format]])
   (:require-macros [event-logger.build-info :as build-info]))
 
 (def build-date (build-info/build-date))
@@ -332,7 +333,8 @@
         t/date-time
         (t/between now)
         describe-diff
-        (str " ago"))))))
+        (->> (format "(%s ago)"))
+        )))))
 
 (defnc add-button [{:keys [state set-state item display]}]
   (d/button
@@ -373,9 +375,9 @@
 (defnc category-details [{:keys [set-state state item]}]
   (d/div
    {:class "details" :id (str "details-" (:id item))}
-   (d/div {:class "event-header"}
-          ($ average-component {:category item})
-          ($ since-component {:category item}))
+    (d/div {:class "event-header"}
+      ($ since-component {:category item})
+      ($ average-component {:category item}))
    (when (:adding-event state)
      (d/div
       (d/input
