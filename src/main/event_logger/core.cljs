@@ -103,38 +103,40 @@
 ;; http actions
 
 (defn upload!
-  [force config categories state set-state]
-  (when (not (:network-respone state))
+  [force config state set-state]
+  (when-not (:network-response state)
     (tel/log! {:level :info :msg "uploading" :data config})
     (set-state assoc :network-action "Upload")
     (let [{:keys [resource user password]} config]
       (when (or force (configured? resource user password))
         (go
           (let [response (->
-                           resource
-                           (http/post
-                             {:with-credentials? false
-                              :basic-auth {:username user
-                                           :password password}
-                              :content-type :text/plain
-                              :body (str {:date (now-str) :categories categories})})
-                           <!)
+                          resource
+                          (http/post
+                           {:with-credentials? false
+                            :basic-auth {:username user
+                                         :password password}
+                            :content-type :text/plain
+                            :body (str
+                                   {:date (now-str)
+                                    :categories (:categories state)})})
+                          <!)
                 edn-response (-> response
-                               :body
-                               edn/read-string)]
+                                 :body
+                                 edn/read-string)]
             (set-state
-              assoc
-              :network-response
-              response)
+             assoc
+             :network-response
+             response)
             (when
-                (and (:success response) (not (:categories edn-response)))
+             (and (:success response) (not (:categories edn-response)))
               (set-state
-                (fn [m]
-                  (assoc-in
-                    (assoc-in m
-                      [:network-response :success] false)
-                    [:network-response :error-text]
-                    "Failed to upload! Check resource config."))))))))))
+               (fn [m]
+                 (assoc-in
+                  (assoc-in m
+                            [:network-response :success] false)
+                  [:network-response :error-text]
+                  "Failed to upload! Check resource config."))))))))))
 
 (defn download!
   [config set-state]
@@ -252,10 +254,10 @@
 (defn move [lst from to]
   (let [item (nth lst from)]
     (->
-      lst
-      (remove-at-index from)
-      (insert-at-index to item)
-      vec)))
+     lst
+     (remove-at-index from)
+     (insert-at-index to item)
+     vec)))
 
 (defn move-category [state from to]
   (update-in state [:categories] move from to))
@@ -334,8 +336,7 @@
         t/date-time
         (t/between now)
         describe-diff
-        (->> (format "(%s ago)"))
-        )))))
+        (->> (format "(%s ago)")))))))
 
 (defnc add-button [{:keys [state set-state item display]}]
   (d/button
@@ -376,9 +377,9 @@
 (defnc category-details [{:keys [set-state state item]}]
   (d/div
    {:class "details" :id (str "details-" (:id item))}
-    (d/div {:class "event-header"}
-      ($ since-component {:category item})
-      ($ average-component {:category item}))
+   (d/div {:class "event-header"}
+          ($ since-component {:category item})
+          ($ average-component {:category item}))
    (when (:adding-event state)
      (d/div
       (d/input
@@ -431,8 +432,11 @@
         drag-over-item (hooks/use-ref nil)
         handle-drag-start (fn [e position]
                             (reset! drag-item position)
-                            (set! (.. e -dataTransfer -effectAllowed) "move")
-                            (.. e -dataTransfer (setData "text/html" (.. e -target)))
+                            (set!
+                             (.. e -dataTransfer -effectAllowed)
+                             "move")
+                            (.. e -dataTransfer
+                                (setData "text/html" (.. e -target)))
                             (.. e -target -classList (add "dragging")))
         handle-drag-enter (fn [e position]
                             (reset! drag-over-item position))
@@ -440,22 +444,21 @@
         handle-drag-end (fn [e]
                           (.. e -target -classList (remove "dragging"))
                           (set-state move-category
-                            @drag-item
-                            @drag-over-item)
+                                     @drag-item
+                                     @drag-over-item)
                           (reset! drag-item nil)
                           (reset! drag-over-item nil))]
 
     (d/ul
      (doall
-       (for [[index item] (map-indexed (fn [i v] [i v]) categories)]
+      (for [[index item] (map-indexed (fn [i v] [i v]) categories)]
         (d/li
          {:key (:id item)
           :draggable true
           :on-drag-start (fn [e] (handle-drag-start e index))
           :on-drag-enter (fn [e] (handle-drag-enter e index))
           :on-drag-end handle-drag-end
-          :on-drag-over (fn [e] (.. e preventDefault))
-          }
+          :on-drag-over (fn [e] (.. e preventDefault))}
          ($ add-button
             {:state state
              :set-state set-state
@@ -480,7 +483,7 @@
     (when network-response
       (d/div
        {:class "modal-overlay"
-        :on-click #(set-state assoc :network-response nil)} ; Add click handler
+        :on-click #(set-state assoc :network-response nil)}
        (d/div
         {:class "modal-content"}
         (if (get-in state [:network-response :success])
@@ -517,8 +520,7 @@
            :on-click (partial
                       upload!
                       true
-                      (:new-config state)
-                      (:categories state)
+                      (:config state)
                       state
                       set-state)}
           "Upload"))
@@ -527,7 +529,7 @@
          (d/button
           {:class "download"
            :on-click (fn []
-                       (download! (:new-config state) set-state))}
+                       (download! (:config state) set-state))}
           "Download"))
         (d/pre
          (with-out-str (pp/pprint state)))
@@ -552,7 +554,8 @@
                              :on-change (fn [e]
                                           (set-state
                                            assoc-in
-                                           [:new-config :resource] (.. e -target -value)))
+                                           [:new-config :resource]
+                                           (.. e -target -value)))
                              :value (get-in state [:new-config :resource])}))
                     (d/div {:class "row"}
                            (d/label {:for :user} "User")
@@ -562,7 +565,8 @@
                              :on-change (fn [e]
                                           (set-state
                                            assoc-in
-                                           [:new-config :user] (.. e -target -value)))
+                                           [:new-config :user]
+                                           (.. e -target -value)))
                              :value (get-in state [:new-config :user])}))
                     (d/div {:class "row"}
                            (d/label {:for :password} "Password")
@@ -573,7 +577,8 @@
                              :on-change (fn [e]
                                           (set-state
                                            assoc-in
-                                           [:new-config :password] (.. e -target -value)))
+                                           [:new-config :password]
+                                           (.. e -target -value)))
                              :value (get-in state [:new-config :password])}))
                     (d/div {:class "row"}
                            (d/button
@@ -619,7 +624,9 @@
                             local-data
                             :new-category ""))
         [last-upload set-last-upload] (hooks/use-state
-                                       (select-keys local-data [:categories]))]
+                                       (select-keys
+                                        local-data
+                                        [:categories]))]
     ;; update local storage
     (hooks/use-effect
      [state]
@@ -630,8 +637,7 @@
      [state]
      (when-not
       (= (:categories state) (:categories last-upload))
-       (upload! false (:config state) (:categories state) state set-state)
-  (set-state assoc :network-action "Download")
+       (upload! false (:config state) state set-state)
        (set-last-upload assoc :categories (:categories state))))
 
     (<>
