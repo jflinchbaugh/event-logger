@@ -103,37 +103,38 @@
 ;; http actions
 
 (defn upload!
-  [force config categories set-state]
-  (tel/log! {:level :info :msg "uploading" :data config})
-  (set-state assoc :network-action "Upload")
-  (let [{:keys [resource user password]} config]
-    (when (or force (configured? resource user password))
-      (go
-        (let [response (->
-                        resource
-                        (http/post
-                         {:with-credentials? false
-                          :basic-auth {:username user
-                                       :password password}
-                          :content-type :text/plain
-                          :body (str {:date (now-str) :categories categories})})
-                        <!)
-              edn-response (-> response
+  [force config categories state set-state]
+  (when (not (:network-respone state))
+    (tel/log! {:level :info :msg "uploading" :data config})
+    (set-state assoc :network-action "Upload")
+    (let [{:keys [resource user password]} config]
+      (when (or force (configured? resource user password))
+        (go
+          (let [response (->
+                           resource
+                           (http/post
+                             {:with-credentials? false
+                              :basic-auth {:username user
+                                           :password password}
+                              :content-type :text/plain
+                              :body (str {:date (now-str) :categories categories})})
+                           <!)
+                edn-response (-> response
                                :body
                                edn/read-string)]
-          (set-state
-           assoc
-           :network-response
-           response)
-          (when
-           (and (:success response) (not (:categories edn-response)))
             (set-state
-             (fn [m]
-               (assoc-in
-                (assoc-in m
-                          [:network-response :success] false)
-                [:network-response :error-text]
-                "Failed to upload! Check resource config.")))))))))
+              assoc
+              :network-response
+              response)
+            (when
+                (and (:success response) (not (:categories edn-response)))
+              (set-state
+                (fn [m]
+                  (assoc-in
+                    (assoc-in m
+                      [:network-response :success] false)
+                    [:network-response :error-text]
+                    "Failed to upload! Check resource config."))))))))))
 
 (defn download!
   [config set-state]
@@ -518,6 +519,7 @@
                       true
                       (:new-config state)
                       (:categories state)
+                      state
                       set-state)}
           "Upload"))
         (d/div
@@ -628,7 +630,8 @@
      [state]
      (when-not
       (= (:categories state) (:categories last-upload))
-       (upload! false (:config state) (:categories state) set-state)
+       (upload! false (:config state) (:categories state) state set-state)
+  (set-state assoc :network-action "Download")
        (set-last-upload assoc :categories (:categories state))))
 
     (<>
