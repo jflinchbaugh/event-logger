@@ -109,10 +109,12 @@
    (not (str/blank? user))
    (not (str/blank? password))))
 
-(defn obfuscate [state]
-  (-> state
-    (update-in [:config :password] (constantly "****"))
-    (update-in [:new-config :password] (constantly "****"))))
+(defn obfuscate [config-key state]
+  (if (get-in state [config-key :password])
+    (-> state
+        (update-in [config-key :password]
+                   (constantly "****")))
+    state))
 
 ;; http actions
 
@@ -477,10 +479,10 @@
 
         handle-drag-end (fn [e]
                           (log-category-change!
-                            set-state
-                            :move-category
-                            {:from (get-in state [:categories @drag-item :id])
-                             :to (get-in state [:categories @drag-over-item :id])})
+                           set-state
+                           :move-category
+                           {:from (get-in state [:categories @drag-item :id])
+                            :to (get-in state [:categories @drag-over-item :id])})
                           (.. e -target -classList (remove "dragging"))
                           (set-state move-category
                                      @drag-item
@@ -516,7 +518,7 @@
         network-action (get state :network-action)]
     (hooks/use-effect
      [network-response network-action]
-      (when (and network-response network-action)
+     (when (and network-response network-action)
        (js/setTimeout
         (fn []
           (set-state assoc :network-response nil)
@@ -573,7 +575,12 @@
                        (download! (:config state) set-state))}
           "Download"))
         (d/pre
-         (with-out-str (pp/pprint (obfuscate state))))
+          (->>
+            state
+            (obfuscate :config)
+            (obfuscate :new-config)
+            pp/pprint
+            with-out-str))
         (d/div
          {:class "row"}
          (d/div "Build Date: " build-date)))))))
