@@ -4,13 +4,23 @@
             [tick.core :as tc]
             [helix.core :refer [$]]
             [event-logger.core :as sut]
+            [event-logger.localstorage :as ls]
             [clojure.string :as str]))
 
 (defn setup-root [f]
   (f)
   (tlr/cleanup))
 
-(t/use-fixtures :each setup-root)
+(defn local-storage-fixture [f]
+  (ls/remove-item! :config)
+  (ls/remove-item! :categories)
+  (ls/remove-item! :categories-log)
+  (f)
+  (ls/remove-item! :config)
+  (ls/remove-item! :categories)
+  (ls/remove-item! :categories-log))
+
+(t/use-fixtures :each setup-root local-storage-fixture)
 
 (t/deftest test-now-str
   (t/testing "now-str shows date/time to the second"
@@ -69,6 +79,28 @@
     (t/is (= "4 hours" (sut/average-duration ["1992-01-01T01:01:01"
                                               "1992-01-01T01:01:02"
                                               "1992-01-01T09:01:01"])))))
+(t/deftest test-local-storage
+
+  (t/testing "read from empty"
+    (t/is
+      (= {:categories-log []
+          :categories []
+          :config nil
+          :new-config nil}
+        (sut/read-local-storage))))
+
+  (t/testing "write"
+    (sut/write-local-storage!
+      "1"
+      {:user "user"}
+      [{:cat "time"}]
+      [{:cat :log}])
+    (t/is (= {:categories-log [{:cat :log}]
+              :categories [{:cat "time"}]
+              :config {:user "user"}
+              :new-config {:user "user"}}
+            (sut/read-local-storage))))
+  )
 
 (t/deftest test-confirms
   (t/testing "clear"
@@ -126,10 +158,10 @@
       (t/is category-input)
       (t/is (not (-> container (.queryByText "+")))))
     (t/testing "add a category"
-      #_(t/is (= ":new-category" (.-name category-input)))
-      #_(.change tlr/fireEvent category-input {:target {:value "mine"}})
+      (t/is (= ":new-category" (.-name category-input)))
+      (.change tlr/fireEvent category-input {:target {:value "mine"}})
       #_(-> container (.getByValue "mine"))
-      (.click tlr/fireEvent debug-btn)
+      #_(.click tlr/fireEvent debug-btn)
       #_(t/is (= "thing" (-> container .-container .-innerText))))))
 
 (t/deftest test-move-category

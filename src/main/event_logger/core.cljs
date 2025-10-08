@@ -72,7 +72,8 @@
 
 (defn storage->edn
   [k]
-  (-> k ls/get-item edn/read-string))
+  (let [v (-> k ls/get-item edn/read-string)]
+    (if (= "null" v) nil v)))
 
 (defn read-local-storage
   []
@@ -86,6 +87,14 @@
 
 (defn write-local-storage!
   [version config categories categories-log]
+  (tel/log!
+    :info
+    {:write-local-storage
+     {:version version
+      :config config
+      :categories categories
+      :categories-log categories-log}})
+
   (ls/set-item! :version version)
   (ls/set-item! :config config)
   (ls/set-item! :categories categories)
