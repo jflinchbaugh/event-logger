@@ -13,7 +13,18 @@
 (t/use-fixtures :each setup-root)
 
 (t/deftest test-now-str
-  (t/is (re-matches #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}" (sut/now-str))))
+  (t/testing "now-str shows date/time to the second"
+    (t/is
+      (re-matches
+        #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}"
+        (sut/now-str)))))
+
+(t/deftest test-now-str-ms
+  (t/testing "now-str shows date/time to milliseconds"
+  (t/is
+    (re-matches
+      #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}"
+      (sut/now-str-ms)))))
 
 (t/deftest test-normalize-date-str
   (t/is (= "2024-01-01T01:01:01"
