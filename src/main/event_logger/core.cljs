@@ -3,7 +3,6 @@
             [helix.hooks :as hooks]
             [taoensso.telemere :as tel]
             [event-logger.localstorage :as ls]
-            [cognitect.transit :as transit]
             [helix.dom :as d]
             [tick.core :as t]
             [cljs.pprint :as pp]
@@ -470,7 +469,7 @@
                             (.. e -dataTransfer
                                 (setData "text/html" (.. e -target)))
                             (.. e -target -classList (add "dragging")))
-        handle-drag-enter (fn [e position]
+        handle-drag-enter (fn [_ position]
                             (reset! drag-over-item position))
 
         handle-drag-end (fn [e]
