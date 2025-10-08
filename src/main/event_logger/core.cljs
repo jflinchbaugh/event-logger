@@ -110,8 +110,9 @@
    (not (str/blank? password))))
 
 (defn obfuscate [state]
-  (update-in state [:config :password] (constantly "****"))
-  (update-in state [:new-config :password] (constantly "****")))
+  (-> state
+    (update-in [:config :password] (constantly "****"))
+    (update-in [:new-config :password] (constantly "****"))))
 
 ;; http actions
 
