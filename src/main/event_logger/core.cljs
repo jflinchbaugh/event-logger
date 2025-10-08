@@ -71,13 +71,9 @@
 
 ;; storage utilities
 
-(defn clean-storage
-  [v]
-  (when (seqable? v) v))
-
 (defn storage->edn
   [k]
-  (-> k ls/get-item edn/read-string clean-storage))
+  (-> k ls/get-item edn/read-string))
 
 (defn read-local-storage
   []
