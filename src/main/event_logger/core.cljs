@@ -117,12 +117,13 @@
 ;; http actions
 
 (defn upload!
-  [force config state set-state]
+  [force state set-state]
   (when-not (:network-response state)
-    (tel/log! {:level :info :msg "uploading" :data config})
-    (set-state assoc :network-action "Upload")
-    (let [{:keys [resource user password]} config]
+    (let [config (:config state)
+          {:keys [resource user password]} config]
       (when (or force (configured? resource user password))
+        (tel/log! {:level :info :msg "uploading" :data config})
+        (set-state assoc :network-action "Upload")
         (go
           (let [response (->
                           resource
@@ -561,7 +562,6 @@
            :on-click (partial
                       upload!
                       true
-                      (:config state)
                       state
                       set-state)}
           "Upload"))
@@ -682,7 +682,7 @@
      [state]
      (when-not
       (= (:categories state) (:categories last-upload))
-       (upload! false (:config state) state set-state)
+       (upload! false state set-state)
        (set-last-upload assoc :categories (:categories state))))
 
     (<>
