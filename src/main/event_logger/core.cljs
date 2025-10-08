@@ -19,7 +19,7 @@
 (def build-date (build-info/build-date))
 
 ;; date utilities
-(defn format-date-time [dt]
+(defn- format-date-time [dt]
   (t/format :iso-local-date-time dt))
 
 (defn now-str

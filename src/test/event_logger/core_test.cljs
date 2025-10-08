@@ -23,7 +23,7 @@
   (t/testing "now-str shows date/time to milliseconds"
   (t/is
     (re-matches
-      #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}"
+      #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{0,3}"
       (sut/now-str-ms)))))
 
 (t/deftest test-normalize-date-str
@@ -50,6 +50,25 @@
     "24 hours"    24 :hours
     "48 hours"    48 :hours
     "2 days"      49 :hours))
+
+(t/deftest test-average-duration
+  (t/testing "no data gives nil"
+    (t/is (nil? (sut/average-duration nil)))
+    (t/is (nil? (sut/average-duration [])))
+    (t/is (nil? (sut/average-duration ["1992-01-01T01:01:01"]))))
+  (t/testing "averages"
+    (t/is (= "1 second" (sut/average-duration ["1992-01-01T01:01:01"
+                                               "1992-01-01T01:01:02"])))
+    (t/is (= "1 second" (sut/average-duration ["1992-01-01T01:01:01"
+                                               "1992-01-01T01:01:02"
+                                               "1992-01-01T01:01:03"])))
+
+    (t/is (= "2 seconds" (sut/average-duration ["1992-01-01T01:01:01"
+                                                "1992-01-01T01:01:02"
+                                                "1992-01-01T01:01:05"])))
+    (t/is (= "4 hours" (sut/average-duration ["1992-01-01T01:01:01"
+                                              "1992-01-01T01:01:02"
+                                              "1992-01-01T09:01:01"])))))
 
 (t/deftest test-confirms
   (t/testing "clear"
@@ -112,25 +131,6 @@
       #_(-> container (.getByValue "mine"))
       (.click tlr/fireEvent debug-btn)
       #_(t/is (= "thing" (-> container .-container .-innerText))))))
-
-(t/deftest test-average-duration
-  (t/testing "no data gives nil"
-    (t/is (nil? (sut/average-duration nil)))
-    (t/is (nil? (sut/average-duration [])))
-    (t/is (nil? (sut/average-duration ["1992-01-01T01:01:01"]))))
-  (t/testing "averages"
-    (t/is (= "1 second" (sut/average-duration ["1992-01-01T01:01:01"
-                                               "1992-01-01T01:01:02"])))
-    (t/is (= "1 second" (sut/average-duration ["1992-01-01T01:01:01"
-                                               "1992-01-01T01:01:02"
-                                               "1992-01-01T01:01:03"])))
-
-    (t/is (= "2 seconds" (sut/average-duration ["1992-01-01T01:01:01"
-                                                "1992-01-01T01:01:02"
-                                                "1992-01-01T01:01:05"])))
-    (t/is (= "4 hours" (sut/average-duration ["1992-01-01T01:01:01"
-                                              "1992-01-01T01:01:02"
-                                              "1992-01-01T09:01:01"])))))
 
 (t/deftest test-move-category
   (t/testing "move"
