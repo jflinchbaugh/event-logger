@@ -14,38 +14,9 @@
             [goog.string :refer [format]])
   (:require-macros [event-logger.build-info :as build-info]))
 
+(def response-display-ms 3000)
+
 (def build-date (build-info/build-date))
-
-;; storage utilities
-(defn json->clj [x]
-  (transit/read (transit/reader :json) x))
-
-(defn clean-storage
-  [v]
-  (when (seqable? v) v))
-
-(defn storage->edn
-  [k]
-  (-> k ls/get-item edn/read-string clean-storage))
-
-(defn read-local-storage
-  []
-  (let [categories (-> :categories storage->edn vec)
-        config (storage->edn :config)
-        old (->
-             "[\"~#'\",\"~:event-logger\"]"
-             ls/get-item
-             json->clj
-             clean-storage)]
-    {:categories (if (seq categories) categories (:categories old))
-     :config config
-     :new-config config}))
-
-(defn write-local-storage!
-  [version config categories]
-  (ls/set-item! :version version)
-  (ls/set-item! :config config)
-  (ls/set-item! :categories categories))
 
 ;; date utilities
 (defn format-date-time [dt]
@@ -55,6 +26,11 @@
   "produce a string for the datetime now"
   []
   (-> (t/date-time) (t/truncate :seconds) format-date-time))
+
+(defn now-str-ms
+  "produce a string for the datetime now"
+  []
+  (-> (t/date-time) format-date-time))
 
 (defn normalize-date-str
   "parse, truncate, and reformat a date string"
@@ -93,12 +69,49 @@
      (t/new-duration :seconds)
      describe-diff)))
 
+;; storage utilities
+
+(defn clean-storage
+  [v]
+  (when (seqable? v) v))
+
+(defn storage->edn
+  [k]
+  (-> k ls/get-item edn/read-string clean-storage))
+
+(defn read-local-storage
+  []
+  (let [categories-log (-> :categories-log storage->edn vec)
+        categories (-> :categories storage->edn vec)
+        config (storage->edn :config)]
+    {:categories-log categories-log
+     :categories categories
+     :config config
+     :new-config config}))
+
+(defn write-local-storage!
+  [version config categories categories-log]
+  (ls/set-item! :version version)
+  (ls/set-item! :config config)
+  (ls/set-item! :categories categories)
+  (ls/set-item! :categories-log categories-log))
+
+(defn log-category-change! [set-state change-type category-data]
+  (set-state update :categories-log
+             conj {:timestamp (now-str-ms)
+                   :type change-type
+                   :data category-data}))
+
 (defn configured?
   [resource user password]
   (and
    (not (str/blank? resource))
    (not (str/blank? user))
    (not (str/blank? password))))
+
+(defn obfuscate [state]
+  (update-in state [:config :password] (constantly "****"))
+  (update-in state [:new-config :password] (constantly "****")))
 
 ;; http actions
 
@@ -133,8 +146,9 @@
               (set-state
                (fn [m]
                  (assoc-in
-                  (assoc-in m
-                            [:network-response :success] false)
+                  (assoc-in
+                   m
+                   [:network-response :success] false)
                   [:network-response :error-text]
                   "Failed to upload! Check resource config."))))))))))
 
@@ -237,10 +251,19 @@
     (when (not (str/blank? new-cat-name))
       (if (existing-categories new-cat-id)
         (open-category! state set-state new-cat-id)
-        (set-state update :categories
-                   conj {:id new-cat-id :name new-cat-name})))))
+        (do
+          (log-category-change!
+           set-state
+           :add-category
+           {:id new-cat-id :name new-cat-name})
+          (set-state update :categories
+                     conj {:id new-cat-id :name new-cat-name}))))))
 
 (defn delete-category! [state set-state item-id]
+  (log-category-change!
+   set-state
+   :delete-category
+   {:id item-id})
   (set-state update :categories
              (comp vec (partial remove (comp #{item-id} :id))))
   (open-category! state set-state nil))
@@ -271,6 +294,10 @@
           idx (.indexOf (map :id (:categories state)) id)
           existing-events (get-in state [:categories idx :events])]
       (when (is-new-event? existing-events time)
+        (log-category-change!
+         set-state
+         :add-event
+         {:category-id id :event time})
         (set-state update-in [:categories idx :events] conj time)
         (set-state dissoc :adding-event)))
     (do
@@ -288,6 +315,11 @@
        new-confirmation))))
 
 (defn delete-event! [state set-state event]
+  (log-category-change!
+   set-state
+   :delete-event
+   {:category-id (:id (get-confirm state :delete-event))
+    :event (:date-time event)})
   (set-state
    update
    :categories
@@ -442,6 +474,11 @@
                             (reset! drag-over-item position))
 
         handle-drag-end (fn [e]
+                          (log-category-change!
+                            set-state
+                            :move-category
+                            {:from (get-in state [:categories @drag-item :id])
+                             :to (get-in state [:categories @drag-over-item :id])})
                           (.. e -target -classList (remove "dragging"))
                           (set-state move-category
                                      @drag-item
@@ -473,14 +510,17 @@
               {:set-state set-state :state state :item item}))))))))
 
 (defnc network-response-display [{:keys [state set-state]}]
-  (let [network-response (get state :network-response)]
+  (let [network-response (get state :network-response)
+        network-action (get state :network-action)]
     (hooks/use-effect
-     [network-response]
-     (when network-response
+     [network-response network-action]
+      (when (and network-response network-action)
        (js/setTimeout
-        (partial set-state assoc :network-response nil)
-        3000))) ; Keep the timeout
-    (when network-response
+        (fn []
+          (set-state assoc :network-response nil)
+          (set-state assoc :network-action nil))
+        response-display-ms)))
+    (when (and network-response network-action)
       (d/div
        {:class "modal-overlay"
         :on-click #(set-state assoc :network-response nil)}
@@ -532,7 +572,7 @@
                        (download! (:config state) set-state))}
           "Download"))
         (d/pre
-         (with-out-str (pp/pprint state)))
+         (with-out-str (pp/pprint (obfuscate state))))
         (d/div
          {:class "row"}
          (d/div "Build Date: " build-date)))))))
@@ -630,9 +670,13 @@
     ;; update local storage
     (hooks/use-effect
      [state]
-     (write-local-storage! "1" (:config state) (:categories state)))
+     (write-local-storage!
+      "1"
+      (:config state)
+      (:categories state)
+      (:categories-log state)))
 
-    ;; upload changes!
+    ;; upload changes
     (hooks/use-effect
      [state]
      (when-not
