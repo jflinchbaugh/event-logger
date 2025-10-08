@@ -9,7 +9,6 @@
                 [cljs-http "0.1.48"]
                 [cider/cider-nrepl "0.57.0"]
                 [binaryage/devtools "1.0.7"]
-                [com.cognitect/transit-cljs  "0.8.280"]
                 [refactor-nrepl "3.11.0"]]
  :dev-http {3000 {:root "public"
                   ;; allow proxy to server component in dev
