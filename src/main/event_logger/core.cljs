@@ -23,12 +23,12 @@
   (t/format :iso-local-date-time dt))
 
 (defn now-str
-  "produce a string for the datetime now"
+  "produce a string for the datetime now to the second"
   []
   (-> (t/date-time) (t/truncate :seconds) format-date-time))
 
 (defn now-str-ms
-  "produce a string for the datetime now"
+  "produce a string for the datetime now to the ms"
   []
   (-> (t/date-time) format-date-time))
 
