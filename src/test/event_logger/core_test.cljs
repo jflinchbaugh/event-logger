@@ -1,6 +1,7 @@
 (ns event-logger.core-test
   (:require [cljs.test :as t]
             ["@testing-library/react" :as tlr]
+            ["react" :as react]
             [tick.core :as tc]
             [helix.core :refer [$]]
             [event-logger.core :as sut]
@@ -149,20 +150,17 @@
 
 (t/deftest test-app
   (let [container (tlr/render ($ sut/app))
-        add-btn (-> container (.getByText "Add"))
-        debug-btn (-> container (.getByText "Debug"))
-        category-input (-> container (.getByPlaceholderText "New Category"))]
+        add-btn (.getByText container "Add")
+        debug-btn (.getByText container "Debug")
+        category-input (.getByPlaceholderText container "New Category")]
     (t/testing "there are basic components and no categories"
       (t/is add-btn)
       (t/is debug-btn)
       (t/is category-input)
-      (t/is (not (-> container (.queryByText "+")))))
+      (t/is (not (.queryByText container "+"))))
     (t/testing "add a category"
       (t/is (= ":new-category" (.-name category-input)))
-      (.change tlr/fireEvent category-input {:target {:value "mine"}})
-      #_(-> container (.getByValue "mine"))
-      #_(.click tlr/fireEvent debug-btn)
-      #_(t/is (= "thing" (-> container .-container .-innerText))))))
+      (t/is (= "" (js-keys category-input))))))
 
 (t/deftest test-move-category
   (t/testing "move"
