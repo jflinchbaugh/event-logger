@@ -159,8 +159,7 @@
       (t/is category-input)
       (t/is (not (.queryByText container "+"))))
     (t/testing "add a category"
-      (t/is (= ":new-category" (.-name category-input)))
-      (t/is (= "" (js-keys category-input))))))
+      (t/is (= ":new-category" (.-name category-input))))))
 
 (t/deftest test-move-category
   (t/testing "move"
