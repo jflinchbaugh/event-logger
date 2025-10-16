@@ -3,11 +3,11 @@
  ["src/dev"
   "src/main"
   "src/test"]
- :dependencies [[lilactown/helix "0.2.1"]
-                [com.taoensso/telemere "1.0.1"]
+ :dependencies [[lilactown/helix "0.2.2"]
+                [com.taoensso/telemere "1.1.0"]
                 [tick "1.0"]
-                [cljs-http "0.1.48"]
-                [cider/cider-nrepl "0.57.0"]
+                [cljs-http "0.1.49"]
+                [cider/cider-nrepl "0.58.0"]
                 [binaryage/devtools "1.0.7"]
                 [refactor-nrepl "3.11.0"]]
  :dev-http {3000 {:root "public"
