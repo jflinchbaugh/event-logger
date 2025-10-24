@@ -660,6 +660,8 @@
                       (set-state assoc :new-category "")))})
    (d/button
     {:class "add"
+     :name "add"
+     :value "add"
      :on-click (fn []
                  (add-category! state set-state)
                  (set-state assoc :new-category ""))}

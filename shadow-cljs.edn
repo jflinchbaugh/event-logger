@@ -11,10 +11,10 @@
                 [binaryage/devtools "1.0.7"]
                 [refactor-nrepl "3.11.0"]]
  :nrepl {:port 7888}
- :dev-http {3000 {:root "public"
-                  ;; allow proxy to server component in dev
-                  :proxy-url "http://localhost:8000/"
-                  }}
+ :dev-http {3000
+            {:root "public"
+             ;; allow proxy to server component in dev
+             :proxy-url "http://localhost:8000/"}}
  :builds
  {
   :frontend

@@ -5,3 +5,4 @@
 (defn main []
   (global-jsdom)
   (test/run-all-tests #".*-test$"))
+

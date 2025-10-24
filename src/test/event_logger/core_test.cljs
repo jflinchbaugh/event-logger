@@ -4,9 +4,13 @@
             ["react" :as react]
             [tick.core :as tc]
             [helix.core :refer [$]]
+            [cljs.pprint :refer [pprint]]
             [event-logger.core :as sut]
             [event-logger.localstorage :as ls]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [cljs.core.async :refer [go]]
+            [cljs.core.async.interop :refer-macros [<p!]]
+            ))
 
 (defn setup-root [f]
   (f)
@@ -130,48 +134,81 @@
     (t/is (sut/adding-event? {:adding-event "event"}))))
 
 (t/deftest test-debugger
-  (let [container (-> ($ sut/debugger {:state {:things :ok}}) tlr/render)
-        btn (.. container (getByText #"Debug"))]
-    (t/testing "debugger has a debug button and no info"
-      (t/is btn)
-      (t/is (= "submit" (-> btn .-type)))
+  (let [render-result (tlr/render ($ sut/debugger {:state {:things :ok}}))
+        container (.-container render-result)
+        debug-button (tlr/getByText container "Debug")]
 
-      (t/is (= "Debug" (-> container .-container .-innerText))))
+    (t/testing "debugger has a debug button and no info initially"
+      (t/is debug-button)
+      ;; Assert that the debug wrapper is not visible initially
+      (t/is (nil? (tlr/queryByText container "Reload"))))
 
     (t/testing "clicking the button exposes debug data"
-      (t/is (.click tlr/fireEvent btn))
-      (t/is
-       (= ["Debug" "Reload" "Upload" "Download" "{:things :ok}"]
-          (->> container .-container .-innerText str/split-lines (take 5)))))
+      (tlr/fireEvent.click debug-button)
+      ;; Assert that the debug wrapper is now visible and contains expected text
+      (t/is (tlr/getByText container "Reload"))
+      (t/is (tlr/getByText container "Upload"))
+      (t/is (tlr/getByText container "Download"))
+      (t/is (tlr/getByText container "{:things :ok}")))
 
     (t/testing "clicking the button hides debug data"
-      (t/is (.click tlr/fireEvent btn))
-      (t/is (= "Debug" (-> container .-container .-innerText))))))
-
-(t/deftest test-app
-  (let [container (tlr/render ($ sut/app))
-        add-btn (.getByText container "Add")
-        debug-btn (.getByText container "Debug")
-        category-input (.getByPlaceholderText container "New Category")]
-    (t/testing "there are basic components and no categories"
-      (t/is add-btn)
-      (t/is debug-btn)
-      (t/is category-input)
-      (t/is (not (.queryByText container "+"))))
-    (t/testing "add a category"
-      (t/is (= ":new-category" (.-name category-input))))))
+      (tlr/fireEvent.click debug-button)
+      ;; Assert that the debug wrapper is no longer visible
+      (t/is (nil? (tlr/queryByText container "Reload"))))))
 
 (t/deftest test-move-category
   (t/testing "move"
     (t/is (= {:categories ["a" "b" "c"]}
-             (sut/move-category {:categories ["a" "b" "c"]} 0 0)))
+            (sut/move-category {:categories ["a" "b" "c"]} 0 0)))
     (t/is (= {:categories ["b" "a" "c"]}
-             (sut/move-category {:categories ["a" "b" "c"]} 0 1)))
+            (sut/move-category {:categories ["a" "b" "c"]} 0 1)))
     (t/is (= {:categories ["b" "c" "a"]}
-             (sut/move-category {:categories ["a" "b" "c"]} 0 2)))
+            (sut/move-category {:categories ["a" "b" "c"]} 0 2)))
     (t/is (= {:categories ["c" "a" "b"]}
-             (sut/move-category {:categories ["a" "b" "c"]} 2 0)))
+            (sut/move-category {:categories ["a" "b" "c"]} 2 0)))
     (t/is (= {:categories ["a" "c" "b"]}
-             (sut/move-category {:categories ["a" "b" "c"]} 2 1)))
+            (sut/move-category {:categories ["a" "b" "c"]} 2 1)))
     (t/is (= {:categories ["a" "b" "c"]}
-             (sut/move-category {:categories ["a" "b" "c"]} 2 2)))))
+            (sut/move-category {:categories ["a" "b" "c"]} 2 2)))))
+
+(t/deftest test-title-bar
+  (t/testing "title-bar renders the correct title"
+    (let [render-result (tlr/render ($ sut/title-bar))
+          container (.-container render-result)]
+      (t/is (tlr/getByText container "Event Logger")))))
+
+(t/deftest test-app
+  (let [render-result (tlr/render ($ sut/app))
+        container (.-container render-result)
+        add-btn (tlr/getByText container "Add")
+        debug-btn (tlr/getByText container "Debug")
+        category-input (tlr/getByPlaceholderText container "New Category")]
+
+    (t/testing "there are basic components and no categories"
+      (t/is add-btn)
+      (t/is debug-btn)
+      (t/is category-input)
+      (t/is (not (tlr/queryByText container "+"))))
+
+    (t/testing "add a category"
+      (t/is (= 0 (count (tlr/queryAllByText container "+")))
+        "there are no categories, those no add buttons")
+      (t/is (= ":new-category" (.-name category-input)))
+
+      (.change tlr/fireEvent
+        category-input
+        #js {:target #js {:value "My New Category"}})
+      (t/is (= "My New Category" (.-value category-input)))
+
+      (t/is (= "add" (.-name add-btn)))
+      (.click tlr/fireEvent add-btn)
+
+      (t/is (= "" (.-value category-input)) "category input is cleared")
+
+      (t/is
+        (= "category"
+          (.-className (tlr/getByText container "My New Category")))
+        "new category shows in the list")
+
+      (t/is (= 1 (count (tlr/queryAllByText container "+")))
+        "new category has 1 + button"))))
