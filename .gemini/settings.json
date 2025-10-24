@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "clojure-mcp": {
+      "command": "/bin/sh",
+      "args": [
+        "-c",
+        "clojure -X:mcp :port 7888"
+      ]
+    }
+  }
+}
