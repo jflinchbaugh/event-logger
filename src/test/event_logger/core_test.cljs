@@ -195,13 +195,13 @@
         "there are no categories, those no add buttons")
       (t/is (= ":new-category" (.-name category-input)))
 
-      (.change tlr/fireEvent
+      (tlr/fireEvent.change
         category-input
         #js {:target #js {:value "My New Category"}})
       (t/is (= "My New Category" (.-value category-input)))
 
       (t/is (= "add" (.-name add-btn)))
-      (.click tlr/fireEvent add-btn)
+      (tlr/fireEvent.click add-btn)
 
       (t/is (= "" (.-value category-input)) "category input is cleared")
 
