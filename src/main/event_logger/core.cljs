@@ -482,15 +482,16 @@
                             (reset! drag-over-item position))
 
         handle-drag-end (fn [e]
-                          (log-category-change!
-                           set-state
-                           :move-category
-                           {:from (get-in state [:categories @drag-item :id])
-                            :to (get-in state [:categories @drag-over-item :id])})
-                          (.. e -target -classList (remove "dragging"))
-                          (set-state move-category
-                                     @drag-item
-                                     @drag-over-item)
+                          (when (not= @drag-item @drag-over-item)
+                            (log-category-change!
+                              set-state
+                              :move-category
+                              {:from (get-in state [:categories @drag-item :id])
+                               :to (get-in state [:categories @drag-over-item :id])})
+                            (.. e -target -classList (remove "dragging"))
+                            (set-state move-category
+                              @drag-item
+                              @drag-over-item))
                           (reset! drag-item nil)
                           (reset! drag-over-item nil))]
 
@@ -660,8 +661,6 @@
                       (set-state assoc :new-category "")))})
    (d/button
     {:class "add"
-     :name "add"
-     :value "add"
      :on-click (fn []
                  (add-category! state set-state)
                  (set-state assoc :new-category ""))}
