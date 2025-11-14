@@ -182,28 +182,46 @@
         container (.-container render-result)
         add-btn (tlr/getByText container "Add")
         debug-btn (tlr/getByText container "Debug")
-        category-input (tlr/getByPlaceholderText container "New Category")]
+        category-input #(tlr/getByPlaceholderText container "New Category")]
+
+    (t/testing "app has a debug button and no info initially"
+      (t/is debug-btn)
+      ;; Assert that the debug wrapper is not visible initially
+      (t/is (nil? (tlr/queryByText container "Reload"))))
+
+    (t/testing "clicking the button exposes debug data"
+      (tlr/fireEvent.click debug-btn)
+      (t/is (tlr/getByText container "Reload"))
+      (t/is (tlr/getByText container "Upload"))
+      (t/is (tlr/getByText container "Download")))
+
+    (t/testing "clicking the button hides debug data"
+      (tlr/fireEvent.click debug-btn)
+      (t/is (nil? (tlr/queryByText container "Reload"))))
 
     (t/testing "there are basic components and no categories"
       (t/is add-btn)
       (t/is debug-btn)
-      (t/is category-input)
-      (t/is (not (tlr/queryByText container "+"))))
+      (t/is (category-input))
+      (t/is
+        (not (tlr/queryByText container "+"))
+        "no categories shown"))
 
     (t/testing "add a category"
       (t/is (= 0 (count (tlr/queryAllByText container "+")))
         "there are no categories, those no add buttons")
-      (t/is (= ":new-category" (.-name category-input)))
+      (t/is (= ":new-category" (.-name (category-input))))
+      (t/is (= "" (.-value (category-input))))
 
       (tlr/fireEvent.change
-        category-input
+        (category-input)
         #js {:target #js {:value "My New Category"}})
-      (t/is (= "My New Category" (.-value category-input)))
+      (t/is (= "My New Category" (.-value (category-input))))
 
-      (t/is (= "add" (.-name add-btn)))
+      (t/is add-btn)
       (tlr/fireEvent.click add-btn)
 
-      (t/is (= "" (.-value category-input)) "category input is cleared")
+      (t/is (= "" (.-value (category-input))) "category input is cleared")
 
       (t/is
         (= "category"
