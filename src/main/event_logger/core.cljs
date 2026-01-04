@@ -88,12 +88,12 @@
 (defn write-local-storage!
   [version config categories categories-log]
   (tel/log!
-    :info
-    {:write-local-storage
-     {:version version
-      :config config
-      :categories categories
-      :categories-log categories-log}})
+   :info
+   {:write-local-storage
+    {:version version
+     :config config
+     :categories categories
+     :categories-log categories-log}})
 
   (ls/set-item! :version version)
   (ls/set-item! :config config)
@@ -484,14 +484,14 @@
         handle-drag-end (fn [e]
                           (when (not= @drag-item @drag-over-item)
                             (log-category-change!
-                              set-state
-                              :move-category
-                              {:from (get-in state [:categories @drag-item :id])
-                               :to (get-in state [:categories @drag-over-item :id])})
+                             set-state
+                             :move-category
+                             {:from (get-in state [:categories @drag-item :id])
+                              :to (get-in state [:categories @drag-over-item :id])})
                             (.. e -target -classList (remove "dragging"))
                             (set-state move-category
-                              @drag-item
-                              @drag-over-item))
+                                       @drag-item
+                                       @drag-over-item))
                           (reset! drag-item nil)
                           (reset! drag-over-item nil))]
 
@@ -531,19 +531,16 @@
         response-display-ms)))
     (when (and network-response network-action)
       (d/div
-       {:class "modal-overlay"
-        :on-click #(set-state assoc :network-response nil)}
+       {:class "toast-container"}
        (d/div
-        {:class "modal-content"}
+        {:class (str "toast " (if (get-in state [:network-response :success]) "success" "error"))
+         :on-click #(set-state assoc :network-response nil)}
         (if (get-in state [:network-response :success])
-          (d/div
-           {:class "response success"}
-           (str (:network-action state) " succeeded!"))
-          (d/div {:class "response error"}
-                 (str
-                  (:network-action state)
-                  " failed: "
-                  (get-in state [:network-response :error-text])))))))))
+          (str (:network-action state) " succeeded!")
+          (str
+           (:network-action state)
+           " failed: "
+           (get-in state [:network-response :error-text]))))))))
 
 (defnc debugger [{:keys [state set-state]}]
   (let [[show? set-show] (hooks/use-state false)]
@@ -580,12 +577,12 @@
                        (download! (:config state) set-state))}
           "Download"))
         (d/pre
-          (->>
-            state
-            (obfuscate :config)
-            (obfuscate :new-config)
-            pp/pprint
-            with-out-str))
+         (->>
+          state
+          (obfuscate :config)
+          (obfuscate :new-config)
+          pp/pprint
+          with-out-str))
         (d/div
          {:class "row"}
          (d/div "Build Date: " build-date)))))))
