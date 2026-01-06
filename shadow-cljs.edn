@@ -4,7 +4,7 @@
   "src/main"
   "src/test"]
  :dependencies [[lilactown/helix "0.2.2"]
-                [com.taoensso/telemere "1.1.0"]
+                [com.taoensso/telemere "1.2.1"]
                 [tick "1.0"]
                 [cljs-http "0.1.49"]
                 [cider/cider-nrepl "0.58.0"]
