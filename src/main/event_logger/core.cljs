@@ -386,25 +386,27 @@
   [state set-state]
   (tel/log! :info "saving config")
   (set-state
-   assoc
-   :config
-   (select-keys
-    (:new-config state)
-    [:resource :user :password])))
+    assoc
+    :config
+    (select-keys
+      (:new-config state)
+      [:resource :user :password])))
 
 ;; define components using the `defnc` macro
 
 (defnc average-component [{:keys [category]}]
   (->>
-   category
-   :events
-   (sort-by :date-time)
-   average-duration
-   (str "Avg: ")
-   (d/div {:class "average-duration"})))
+    category
+    :events
+    (sort-by :date-time)
+    average-duration
+    (str "Avg: ")
+    (d/div {:class "average-duration"})))
 
 (defnc since-component [{:keys [category]}]
-  (let [last-event (->> category :events (sort-by :date-time) last)
+  (let [sorted-events (->> category :events (sort-by :date-time))
+        last-event (last sorted-events)
+        _ (tel/log! :info {:last-event last-event}) #_(tel/log! :info {:sorted-events sorted-events})
         [now set-now] (hooks/use-state (t/date-time))]
     (js/setTimeout (partial set-now (t/date-time)) 1000)
     (when last-event
