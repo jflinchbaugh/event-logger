@@ -1,8 +1,9 @@
-## Run the App for Dev
+## Run the App for Dev and Tests in Browser
 ```
-$ npx shadow-cljs watch frontend
+$ npx shadow-cljs watch frontend test-browser
 ```
 
+- Open a browser to http://localhost:3021/ to view the test results
 - Open a browser to http://localhost:3000/index.html
 - Everything else through http://localhost:3000/
   will proxy to http://localhost:8000/ to find the storage server
@@ -21,4 +22,3 @@ and launch the browser view of the app.
 
 ## Tests in Browser
 - `npx shadow-cljs watch test-browser`
-- open a browser to http://localhost:3021/
