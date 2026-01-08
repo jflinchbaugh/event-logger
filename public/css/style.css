@@ -136,6 +136,13 @@ input.new-event {
   margin-bottom: 0.25em;
 }
 
+input.new-event-note {
+  width: 100%;
+  font-size: 1rem;
+  border-radius: 1rem;
+  margin-bottom: 0.25em;
+}
+
 .config input {
   width: 100%;
   font-size: 1rem;
@@ -152,6 +159,12 @@ ul li {
 
 .event .duration {
   font-size: 0.6rem;
+}
+
+.event .note {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  color: #666;
 }
 
 button:focus {

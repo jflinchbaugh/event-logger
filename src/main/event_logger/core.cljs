@@ -97,7 +97,7 @@
                                 (fn [events]
                                   (mapv
                                    #(if (map? %)
-                                      (assoc (select-keys % [:date-time]) :note "")
+                                      (merge {:note ""} (select-keys % [:date-time :note]))
                                       {:date-time % :note ""})
                                    events))))
                              categories)
@@ -327,20 +327,24 @@
   (clear-confirms! set-state)
   (if (adding-event? state)
     (let [time (:adding-event state)
+          note (:adding-note state)
           idx (.indexOf (map :id (:categories state)) id)
-          event {:date-time time :note ""}
+          event {:date-time time :note note}
           existing-events (get-in state [:categories idx :events])]
       (when (is-new-event? existing-events time)
         (log-category-change!
          set-state
          :add-event
          {:category-id id :event event})
-        (set-state update-in [:categories idx :events] conj event)
-        (set-state dissoc :adding-event)))
+        (set-state
+         (fn [s]
+           (-> s
+               (update-in [:categories idx :events] conj event)
+               (dissoc :adding-event :adding-note))))))
     (do
       (when (not= (:display-category state) id)
         (open-category! state set-state id))
-      (set-state assoc :adding-event (now-str)))))
+      (set-state assoc :adding-event (now-str) :adding-note ""))))
 
 (defn open-delete-event! [state set-state id event]
   (let [new-confirmation {:id id :event (:date-time event)}]
@@ -436,7 +440,7 @@
     :on-click (partial expand-action event)}
    (d/span {:class "date-time"} (:date-time event))
    (when (not (str/blank? (:note event)))
-     (d/span {:class "label"} (str " - " (:note event))))
+     (d/span {:class "note"} (:note event)))
    (when
     (expanded-fn? event)
      (d/span
@@ -466,6 +470,15 @@
         :on-change #(set-state
                      assoc
                      :adding-event
+                     (.. % -target -value))})
+      (d/input
+       {:class "new-event-note"
+        :type "text"
+        :placeholder "Note"
+        :value (:adding-note state)
+        :on-change #(set-state
+                     assoc
+                     :adding-note
                      (.. % -target -value))})
       ($ add-button
          {:state state
