@@ -401,7 +401,7 @@
    (d/div {:class "average-duration"})))
 
 (defnc since-component [{:keys [category]}]
-  (let [last-event (->> category :events (sort-by :datetime) last)
+  (let [last-event (->> category :events (sort-by :date-time) last)
         [now set-now] (hooks/use-state (t/date-time))]
     (js/setTimeout (partial set-now (t/date-time)) 1000)
     (when last-event
