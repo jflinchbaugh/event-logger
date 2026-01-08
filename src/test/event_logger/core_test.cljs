@@ -49,6 +49,12 @@
   (t/is (= "2024-01-01T01:01:00"
            (sut/normalize-date-str "2024-01-01T01:01"))))
 
+(t/deftest test-normalize-event
+  (t/is (= {:date-time "2024-01-01T01:01:01" :note nil}
+           (sut/normalize-event "2024-01-01T01:01:01")))
+  (t/is (= {:date-time "2024-01-01T01:01:01" :note "foo"}
+           (sut/normalize-event {:date-time "2024-01-01T01:01:01" :note "foo"}))))
+
 (t/deftest test-describe-diff
   (t/are [expected value unit]
          (= expected (sut/describe-diff (tc/new-duration value unit)))
@@ -83,7 +89,13 @@
                                                 "1992-01-01T01:01:05"])))
     (t/is (= "4 hours" (sut/average-duration ["1992-01-01T01:01:01"
                                               "1992-01-01T01:01:02"
-                                              "1992-01-01T09:01:01"])))))
+                                              "1992-01-01T09:01:01"])))
+    (t/testing "averages with maps"
+      (t/is (= "1 second" (sut/average-duration [{:date-time "1992-01-01T01:01:01"}
+                                                 {:date-time "1992-01-01T01:01:02"}])))
+      ;; Mixed
+      (t/is (= "1 second" (sut/average-duration [{:date-time "1992-01-01T01:01:01"}
+                                                 "1992-01-01T01:01:02"]))))))
 (t/deftest test-local-storage
 
   (t/testing "read from empty"
@@ -98,10 +110,10 @@
     (sut/write-local-storage!
       "1"
       {:user "user"}
-      [{:cat "time"}]
+      [{:cat "time" :events ["2024-01-01T01:01:01"]}]
       [{:cat :log}])
     (t/is (= {:categories-log [{:cat :log}]
-              :categories [{:cat "time"}]
+              :categories [{:cat "time" :events [{:date-time "2024-01-01T01:01:01" :note ""}]}]
               :config {:user "user"}
               :new-config {:user "user"}}
             (sut/read-local-storage))))
@@ -128,7 +140,10 @@
   (t/testing "is-new-event?"
     (t/is (sut/is-new-event? [] "event"))
     (t/is (sut/is-new-event? ["other"] "event"))
-    (t/is (not (sut/is-new-event? ["event"] "event"))))
+    (t/is (not (sut/is-new-event? ["event"] "event")))
+    (t/testing "with maps"
+      (t/is (sut/is-new-event? [{:date-time "other"}] "event"))
+      (t/is (not (sut/is-new-event? [{:date-time "event"}] "event")))))
   (t/testing "adding-event?"
     (t/is (not (sut/adding-event? {})))
     (t/is (sut/adding-event? {:adding-event "event"}))))

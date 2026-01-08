@@ -40,6 +40,16 @@
    (t/truncate :seconds)
    format-date-time))
 
+(defn get-event-time [event]
+  (if (map? event) (:date-time event) event))
+
+(defn normalize-event
+  [event]
+  (let [t (get-event-time event)
+        l (when (map? event) (:note event))]
+    {:date-time (normalize-date-str t)
+     :note l}))
+
 (defn describe-diff [diff]
   (let [days (t/days diff)
         hours (t/hours diff)
@@ -59,9 +69,9 @@
     (->
      (t/between
       (t/date-time
-       (first events))
+       (get-event-time (first events)))
       (t/date-time
-       (last events)))
+       (get-event-time (last events))))
      t/seconds
      (/ (dec (count events)))
      int
@@ -79,9 +89,21 @@
   []
   (let [categories-log (-> :categories-log storage->edn vec)
         categories (-> :categories storage->edn vec)
+        migrated-categories (mapv
+                             (fn [cat]
+                               (update
+                                cat
+                                :events
+                                (fn [events]
+                                  (mapv
+                                   #(if (map? %)
+                                      (assoc (select-keys % [:date-time]) :note "")
+                                      {:date-time % :note ""})
+                                   events))))
+                             categories)
         config (storage->edn :config)]
     {:categories-log categories-log
-     :categories categories
+     :categories migrated-categories
      :config config
      :new-config config}))
 
@@ -213,7 +235,8 @@
 (defn is-new-event?
   "is this event new, and not already in the list?"
   [existing-events event]
-  (empty? (filter (partial = event) existing-events)))
+  (let [time (get-event-time event)]
+    (empty? (filter #(= (get-event-time %) time) existing-events))))
 
 (defn adding-event?
   "is there an event being added?"
@@ -231,13 +254,18 @@
    (partition 2 1)
    (mapv
     (fn [[a b]]
-      {:date-time b
-       :duration (describe-diff
-                  (t/between
-                   (t/date-time a)
-                   (t/date-time b)))}))
-   (cons {:date-time (first events)
-          :duration nil})))
+      (let [t-a (get-event-time a)
+            t-b (get-event-time b)
+            base-map (if (map? b) b {:date-time b})]
+        (assoc base-map
+               :duration (describe-diff
+                          (t/between
+                           (t/date-time t-a)
+                           (t/date-time t-b)))))))
+   (cons (let [f (first events)]
+           (if (map? f)
+             (assoc f :duration nil)
+             {:date-time f :duration nil})))))
 
 ;; category actions
 
@@ -300,13 +328,14 @@
   (if (adding-event? state)
     (let [time (:adding-event state)
           idx (.indexOf (map :id (:categories state)) id)
+          event {:date-time time :note ""}
           existing-events (get-in state [:categories idx :events])]
       (when (is-new-event? existing-events time)
         (log-category-change!
          set-state
          :add-event
-         {:category-id id :event time})
-        (set-state update-in [:categories idx :events] conj time)
+         {:category-id id :event event})
+        (set-state update-in [:categories idx :events] conj event)
         (set-state dissoc :adding-event)))
     (do
       (when (not= (:display-category state) id)
@@ -327,7 +356,7 @@
    set-state
    :delete-event
    {:category-id (:id (get-confirm state :delete-event))
-    :event (:date-time event)})
+    :event event})
   (set-state
    update
    :categories
@@ -339,7 +368,10 @@
           (update
            cat
            :events
-           (fn [events] (remove #{(:date-time event)} events)))))
+           (fn [events]
+             (remove
+              #(= (get-event-time %) (:date-time event))
+              events)))))
       cats)))
   (clear-confirms! set-state))
 
@@ -359,13 +391,13 @@
   (->>
    category
    :events
-   sort
+   (sort-by :date-time)
    average-duration
    (str "Avg: ")
    (d/div {:class "average-duration"})))
 
 (defnc since-component [{:keys [category]}]
-  (let [last-event (-> category :events sort last)
+  (let [last-event (->> category :events (sort-by :datetime) last)
         [now set-now] (hooks/use-state (t/date-time))]
     (js/setTimeout (partial set-now (t/date-time)) 1000)
     (when last-event
@@ -373,6 +405,7 @@
        {:class "time-since"}
        (->
         last-event
+        get-event-time
         t/date-time
         (t/between now)
         describe-diff
@@ -402,6 +435,8 @@
    {:class "event"
     :on-click (partial expand-action event)}
    (d/span {:class "date-time"} (:date-time event))
+   (when (not (str/blank? (:note event)))
+     (d/span {:class "label"} (str " - " (:note event))))
    (when
     (expanded-fn? event)
      (d/span
@@ -441,13 +476,13 @@
     {:class "events"}
     (let [events (->> item
                       :events
-                      (map normalize-date-str)
-                      sort
+                      (map normalize-event)
+                      (sort-by :date-time)
                       add-durations)]
       (doall
        (for [event (reverse events)]
          ($ event-details
-            {:key (str (:id item) "-" event)
+            {:key (str (:id item) "-" (:date-time event))
              :event event
              :expanded-fn? (partial
                             event-expanded?
