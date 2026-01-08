@@ -624,6 +624,12 @@
            :on-click (fn []
                        (download! (:config state) set-state))}
           "Download"))
+        (d/div
+         {:class "row"}
+         (d/button
+          {:class "clear-log"
+           :on-click (fn [] (set-state assoc :categories-log []))}
+          "Clear Log"))
         (d/pre
          (->>
           state
