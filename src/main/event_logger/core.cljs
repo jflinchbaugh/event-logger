@@ -740,7 +740,7 @@
     (hooks/use-effect
      [state]
      (write-local-storage!
-      "1"
+      "2"
       (:config state)
       (:categories state)
       (:categories-log state)))
