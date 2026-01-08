@@ -40,7 +40,10 @@
    (t/truncate :seconds)
    format-date-time))
 
-(defn get-event-time [event]
+(defn get-event-time
+  "read date-time of events in old format (date string only)
+   or new format (as a map with a :date-time)"
+  [event]
   (if (map? event) (:date-time event) event))
 
 (defn normalize-event
