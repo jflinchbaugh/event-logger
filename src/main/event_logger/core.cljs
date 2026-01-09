@@ -44,12 +44,12 @@
   "read date-time of events in old format (date string only)
    or new format (as a map with a :date-time)"
   [event]
-  (if (map? event) (:date-time event) event))
+  (:date-time event))
 
 (defn normalize-event
   [event]
   (let [t (get-event-time event)
-        l (when (map? event) (:note event))]
+        l (:note event)]
     {:date-time (normalize-date-str t)
      :note l}))
 
@@ -100,7 +100,9 @@
                                 (fn [events]
                                   (mapv
                                    #(if (map? %)
-                                      (merge {:note ""} (select-keys % [:date-time :note]))
+                                      (merge
+                                        {:note ""}
+                                        (select-keys % [:date-time :note]))
                                       {:date-time % :note ""})
                                    events))))
                              categories)
@@ -258,17 +260,13 @@
    (mapv
     (fn [[a b]]
       (let [t-a (get-event-time a)
-            t-b (get-event-time b)
-            base-map (if (map? b) b {:date-time b})]
-        (assoc base-map
+            t-b (get-event-time b)]
+        (assoc b
                :duration (describe-diff
                           (t/between
                            (t/date-time t-a)
                            (t/date-time t-b)))))))
-   (cons (let [f (first events)]
-           (if (map? f)
-             (assoc f :duration nil)
-             {:date-time f :duration nil})))))
+   (cons (assoc (first events) :duration nil))))
 
 ;; category actions
 

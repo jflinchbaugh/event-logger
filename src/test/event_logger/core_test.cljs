@@ -9,8 +9,7 @@
             [event-logger.localstorage :as ls]
             [clojure.string :as str]
             [cljs.core.async :refer [go]]
-            [cljs.core.async.interop :refer-macros [<p!]]
-            ))
+            [cljs.core.async.interop :refer-macros [<p!]]))
 
 (defn setup-root [f]
   (f)
@@ -30,14 +29,14 @@
 (t/deftest test-now-str
   (t/testing "now-str shows date/time to the second"
     (t/is
-      (re-matches
-        #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}"
-        (sut/now-str)))))
+     (re-matches
+      #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}"
+      (sut/now-str)))))
 
 (t/deftest test-now-str-ms
   (t/testing "now-str shows date/time to milliseconds"
-  (t/is
-    (re-matches
+    (t/is
+     (re-matches
       #"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{0,3}"
       (sut/now-str-ms)))))
 
@@ -51,7 +50,7 @@
 
 (t/deftest test-normalize-event
   (t/is (= {:date-time "2024-01-01T01:01:01" :note nil}
-           (sut/normalize-event "2024-01-01T01:01:01")))
+           (sut/normalize-event {:date-time "2024-01-01T01:01:01"})))
   (t/is (= {:date-time "2024-01-01T01:01:01" :note "foo"}
            (sut/normalize-event {:date-time "2024-01-01T01:01:01" :note "foo"}))))
 
@@ -78,46 +77,45 @@
     (t/is (nil? (sut/average-duration [])))
     (t/is (nil? (sut/average-duration ["1992-01-01T01:01:01"]))))
   (t/testing "averages"
-    (t/is (= "1 second" (sut/average-duration ["1992-01-01T01:01:01"
-                                               "1992-01-01T01:01:02"])))
-    (t/is (= "1 second" (sut/average-duration ["1992-01-01T01:01:01"
-                                               "1992-01-01T01:01:02"
-                                               "1992-01-01T01:01:03"])))
+    (t/is (= "1 second"
+             (sut/average-duration [{:date-time "1992-01-01T01:01:01"}
+                                    {:date-time "1992-01-01T01:01:02"}])))
+    (t/is (= "1 second"
+             (sut/average-duration [{:date-time "1992-01-01T01:01:01"}
+                                    {:date-time "1992-01-01T01:01:02"}
+                                    {:date-time "1992-01-01T01:01:03"}])))
 
-    (t/is (= "2 seconds" (sut/average-duration ["1992-01-01T01:01:01"
-                                                "1992-01-01T01:01:02"
-                                                "1992-01-01T01:01:05"])))
-    (t/is (= "4 hours" (sut/average-duration ["1992-01-01T01:01:01"
-                                              "1992-01-01T01:01:02"
-                                              "1992-01-01T09:01:01"])))
-    (t/testing "averages with maps"
-      (t/is (= "1 second" (sut/average-duration [{:date-time "1992-01-01T01:01:01"}
-                                                 {:date-time "1992-01-01T01:01:02"}])))
-      ;; Mixed
-      (t/is (= "1 second" (sut/average-duration [{:date-time "1992-01-01T01:01:01"}
-                                                 "1992-01-01T01:01:02"]))))))
+    (t/is (= "2 seconds"
+             (sut/average-duration [{:date-time "1992-01-01T01:01:01"}
+                                    {:date-time "1992-01-01T01:01:02"}
+                                    {:date-time "1992-01-01T01:01:05"}])))
+    (t/is (= "4 hours"
+             (sut/average-duration [{:date-time "1992-01-01T01:01:01"}
+                                    {:date-time "1992-01-01T01:01:02"}
+                                    {:date-time "1992-01-01T09:01:01"}])))))
 (t/deftest test-local-storage
 
   (t/testing "read from empty"
     (t/is
-      (= {:categories-log []
-          :categories []
-          :config nil
-          :new-config nil}
+     (= {:categories-log []
+         :categories []
+         :config nil
+         :new-config nil}
         (sut/read-local-storage))))
 
   (t/testing "write"
     (sut/write-local-storage!
-      "1"
-      {:user "user"}
-      [{:cat "time" :events ["2024-01-01T01:01:01"]}]
-      [{:cat :log}])
+     "1"
+     {:user "user"}
+     [{:cat "time" :events ["2024-01-01T01:01:01"]}]
+     [{:cat :log}])
     (t/is (= {:categories-log [{:cat :log}]
-              :categories [{:cat "time" :events [{:date-time "2024-01-01T01:01:01" :note ""}]}]
+              :categories [{:cat "time"
+                            :events [{:date-time "2024-01-01T01:01:01"
+                                      :note ""}]}]
               :config {:user "user"}
               :new-config {:user "user"}}
-            (sut/read-local-storage))))
-  )
+             (sut/read-local-storage)))))
 
 (t/deftest test-confirms
   (t/testing "clear"
@@ -138,12 +136,13 @@
 
 (t/deftest test-event
   (t/testing "is-new-event?"
-    (t/is (sut/is-new-event? [] "event"))
-    (t/is (sut/is-new-event? ["other"] "event"))
-    (t/is (not (sut/is-new-event? ["event"] "event")))
-    (t/testing "with maps"
-      (t/is (sut/is-new-event? [{:date-time "other"}] "event"))
-      (t/is (not (sut/is-new-event? [{:date-time "event"}] "event")))))
+    (t/is (sut/is-new-event? [] {:date-time "event"}))
+    (t/is (sut/is-new-event?
+           [{:date-time "other"}]
+           {:date-time "event"}))
+    (t/is (not (sut/is-new-event?
+                [{:date-time "event"}]
+                {:date-time "event"}))))
   (t/testing "adding-event?"
     (t/is (not (sut/adding-event? {})))
     (t/is (sut/adding-event? {:adding-event "event"}))))
@@ -174,17 +173,17 @@
 (t/deftest test-move-category
   (t/testing "move"
     (t/is (= {:categories ["a" "b" "c"]}
-            (sut/move-category {:categories ["a" "b" "c"]} 0 0)))
+             (sut/move-category {:categories ["a" "b" "c"]} 0 0)))
     (t/is (= {:categories ["b" "a" "c"]}
-            (sut/move-category {:categories ["a" "b" "c"]} 0 1)))
+             (sut/move-category {:categories ["a" "b" "c"]} 0 1)))
     (t/is (= {:categories ["b" "c" "a"]}
-            (sut/move-category {:categories ["a" "b" "c"]} 0 2)))
+             (sut/move-category {:categories ["a" "b" "c"]} 0 2)))
     (t/is (= {:categories ["c" "a" "b"]}
-            (sut/move-category {:categories ["a" "b" "c"]} 2 0)))
+             (sut/move-category {:categories ["a" "b" "c"]} 2 0)))
     (t/is (= {:categories ["a" "c" "b"]}
-            (sut/move-category {:categories ["a" "b" "c"]} 2 1)))
+             (sut/move-category {:categories ["a" "b" "c"]} 2 1)))
     (t/is (= {:categories ["a" "b" "c"]}
-            (sut/move-category {:categories ["a" "b" "c"]} 2 2)))))
+             (sut/move-category {:categories ["a" "b" "c"]} 2 2)))))
 
 (t/deftest test-title-bar
   (t/testing "title-bar renders the correct title"
@@ -219,18 +218,18 @@
       (t/is debug-btn)
       (t/is (category-input))
       (t/is
-        (not (tlr/queryByText container "+"))
-        "no categories shown"))
+       (not (tlr/queryByText container "+"))
+       "no categories shown"))
 
     (t/testing "add a category"
       (t/is (= 0 (count (tlr/queryAllByText container "+")))
-        "there are no categories, those no add buttons")
+            "there are no categories, those no add buttons")
       (t/is (= ":new-category" (.-name (category-input))))
       (t/is (= "" (.-value (category-input))))
 
       (tlr/fireEvent.change
-        (category-input)
-        #js {:target #js {:value "My New Category"}})
+       (category-input)
+       #js {:target #js {:value "My New Category"}})
       (t/is (= "My New Category" (.-value (category-input))))
 
       (t/is add-btn)
@@ -239,9 +238,9 @@
       (t/is (= "" (.-value (category-input))) "category input is cleared")
 
       (t/is
-        (= "category"
+       (= "category"
           (.-className (tlr/getByText container "My New Category")))
-        "new category shows in the list")
+       "new category shows in the list")
 
       (t/is (= 1 (count (tlr/queryAllByText container "+")))
-        "new category has 1 + button"))))
+            "new category has 1 + button"))))
