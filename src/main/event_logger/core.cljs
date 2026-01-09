@@ -467,45 +467,61 @@
 
 (defnc event-details
   [{:keys [event expanded-fn? expand-action delete-action state set-state category-id]}]
-  (if (editing-event? state category-id event)
-    (d/li
-      {:class "event editing"}
-      (d/div
+  (let [editing? (editing-event? state category-id event)
+        note-ref (hooks/use-ref nil)]
+    (hooks/use-effect
+     [editing?]
+     (when editing?
+       (some-> note-ref .-current .focus)))
+    (if editing?
+      (d/li
+       {:class "event editing"}
+       (d/div
         (d/input
-          {:class "new-event"
-           :type "datetime-local"
-           :value (get-in state [:editing-event :time])
-           :on-change #(set-state assoc-in [:editing-event :time] (.. % -target -value))})
+         {:class "new-event"
+          :type "datetime-local"
+          :value (get-in state [:editing-event :time])
+          :on-change #(set-state assoc-in [:editing-event :time] (.. % -target -value))
+          :on-key-down (fn [e]
+                         (cond
+                           (== 13 (.-which e)) (save-edited-event! state set-state)
+                           (== 27 (.-which e)) (cancel-edit! set-state)))})
         (d/input
-          {:class "new-event-note"
-           :type "text"
-           :value (get-in state [:editing-event :note])
-           :on-change #(set-state assoc-in [:editing-event :note] (.. % -target -value))})
+         {:class "new-event-note"
+          :type "text"
+          :ref note-ref
+          :value (get-in state [:editing-event :note])
+          :on-change #(set-state assoc-in [:editing-event :note] (.. % -target -value))
+          :on-key-down (fn [e]
+                         (cond
+                           (== 13 (.-which e)) (save-edited-event! state set-state)
+                           (== 27 (.-which e)) (cancel-edit! set-state)))})
         (d/button {:class "save" :on-click #(save-edited-event! state set-state)} "Save")
         (d/button {:on-click #(cancel-edit! set-state)} "Cancel")))
-    (d/li
-      {:class "event"
-       :on-click (partial expand-action event)}
-      (d/span {:class "date-time"} (:date-time event))
-      (when (not (str/blank? (:note event)))
-        (d/span {:class "note"} (:note event)))
-      (when
-          (expanded-fn? event)
-        (d/span
-          {:class "actions"}
-          " "
-          (d/button
+      (d/li
+       {:class "event"
+        :on-click (partial expand-action event)}
+       (d/div
+        {:class "event-header"}
+        (d/span {:class "date-time"} (:date-time event))
+        (when
+         (expanded-fn? event)
+          (d/span
+           {:class "actions"}
+           (d/button
             {:class "delete"
              :on-click (partial delete-action event)}
             "X")
-          (d/button
+           (d/button
             {:class "edit"
              :on-click (fn [e]
                          (.stopPropagation e)
                          (start-editing-event! state set-state category-id event))}
-            "Edit")))
-      (when (:duration event)
-        (d/div {:class "duration"} (str "(" (:duration event) ")"))))))
+            "Edit"))))
+       (when (not (str/blank? (:note event)))
+         (d/div {:class "note"} (:note event)))
+       (when (:duration event)
+         (d/div {:class "duration"} (str "(" (:duration event) ")")))))))
 
 (defnc category-details [{:keys [set-state state item]}]
   (d/div

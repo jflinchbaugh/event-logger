@@ -163,12 +163,15 @@ ul li {
   padding: 0.25rem;
 }
 
+.event {
+  padding-left: 0;
+}
+
 .event .duration {
   font-size: 0.6rem;
 }
 
 .event .note {
-  margin-left: 0.5rem;
   font-size: 0.8rem;
   color: #666;
 }
@@ -196,7 +199,6 @@ button:hover {
 .details .event-header {
   display: flex;
   justify-content: space-between;
-  padding-left: 0.25rem;
   padding-right: 0.25rem;
 }
 
