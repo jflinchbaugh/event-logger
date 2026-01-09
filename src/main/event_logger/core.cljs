@@ -421,23 +421,25 @@
 (defn save-edited-event! [state set-state]
   (let [{:keys [category-id original-event time note]} (:editing-event state)
         note (str/trim (or note ""))
-        new-event {:date-time time :note note}]
-    (log-category-change!
-     set-state :delete-event
-     {:category-id category-id :event original-event})
-    (log-category-change!
-     set-state :add-event
-     {:category-id category-id :event new-event})
-    (set-state
-     (fn [s]
-       (let [cat-idx (.indexOf (map :id (:categories s)) category-id)]
-         (-> s
-             (update-in [:categories cat-idx :events]
-                        (fn [events]
-                          (conj
-                           (vec (remove #(= (get-event-time %) (:date-time original-event)) events))
-                           new-event)))
-             (dissoc :editing-event)))))))
+        new-event {:date-time time :note note}
+        cat-idx (.indexOf (map :id (:categories state)) category-id)
+        existing-events (get-in state [:categories cat-idx :events])
+        duplicate? (some #(and (not= % original-event)
+                               (= (get-event-time %) time))
+                         existing-events)]
+    (when-not duplicate?
+      (log-category-change! set-state :delete-event {:category-id category-id :event original-event})
+      (log-category-change! set-state :add-event {:category-id category-id :event new-event})
+      (set-state
+       (fn [s]
+         (let [cat-idx (.indexOf (map :id (:categories s)) category-id)]
+           (-> s
+               (update-in [:categories cat-idx :events]
+                          (fn [events]
+                            (conj
+                             (vec (remove #(= (get-event-time %) (:date-time original-event)) events))
+                             new-event)))
+               (dissoc :editing-event))))))))
 
 ;; define components using the `defnc` macro
 
