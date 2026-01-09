@@ -103,16 +103,29 @@
          :new-config nil}
         (sut/read-local-storage))))
 
-  (t/testing "write"
+  (t/testing "write->read with migration"
     (sut/write-local-storage!
-     "1"
-     {:user "user"}
-     [{:cat "time" :events ["2024-01-01T01:01:01"]}]
-     [{:cat :log}])
+      "1"
+      {:user "user"}
+      [{:cat "time" :events ["2024-01-01T01:01:01"]}]
+      [{:cat :log}])
     (t/is (= {:categories-log [{:cat :log}]
               :categories [{:cat "time"
                             :events [{:date-time "2024-01-01T01:01:01"
                                       :note ""}]}]
+              :config {:user "user"}
+              :new-config {:user "user"}}
+            (sut/read-local-storage))))
+  (t/testing "write->read"
+    (sut/write-local-storage!
+     "1"
+     {:user "user"}
+     [{:cat "time" :events [{:date-time "2024-01-01T01:01:01" :note "my-note"}]}]
+     [{:cat :log}])
+    (t/is (= {:categories-log [{:cat :log}]
+              :categories [{:cat "time"
+                            :events [{:date-time "2024-01-01T01:01:01"
+                                      :note "my-note"}]}]
               :config {:user "user"}
               :new-config {:user "user"}}
              (sut/read-local-storage)))))
