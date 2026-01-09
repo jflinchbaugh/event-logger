@@ -101,8 +101,8 @@
                                   (mapv
                                    #(if (map? %)
                                       (merge
-                                        {:note ""}
-                                        (select-keys % [:date-time :note]))
+                                       {:note ""}
+                                       (select-keys % [:date-time :note]))
                                       {:date-time % :note ""})
                                    events))))
                              categories)
@@ -328,7 +328,7 @@
   (clear-confirms! set-state)
   (if (adding-event? state)
     (let [time (:adding-event state)
-          note (:adding-note state)
+          note (str/trim (or (:adding-note state) ""))
           idx (.indexOf (map :id (:categories state)) id)
           event {:date-time time :note note}
           existing-events (get-in state [:categories idx :events])]
@@ -384,11 +384,11 @@
   [state set-state]
   (tel/log! :info "saving config")
   (set-state
-    assoc
-    :config
-    (select-keys
-      (:new-config state)
-      [:resource :user :password])))
+   assoc
+   :config
+   (select-keys
+    (:new-config state)
+    [:resource :user :password])))
 
 (defn editing-event? [state category-id event]
   (let [editing (:editing-event state)]
@@ -404,11 +404,19 @@
 (defn cancel-edit! [set-state]
   (set-state dissoc :editing-event))
 
+(defn cancel-add-event! [set-state]
+  (set-state dissoc :adding-event :adding-note))
+
 (defn save-edited-event! [state set-state]
   (let [{:keys [category-id original-event time note]} (:editing-event state)
+        note (str/trim (or note ""))
         new-event {:date-time time :note note}]
-    (log-category-change! set-state :delete-event {:category-id category-id :event original-event})
-    (log-category-change! set-state :add-event {:category-id category-id :event new-event})
+    (log-category-change!
+     set-state :delete-event
+     {:category-id category-id :event original-event})
+    (log-category-change!
+     set-state :add-event
+     {:category-id category-id :event new-event})
     (set-state
      (fn [s]
        (let [cat-idx (.indexOf (map :id (:categories s)) category-id)]
@@ -424,12 +432,12 @@
 
 (defnc average-component [{:keys [category]}]
   (->>
-    category
-    :events
-    (sort-by :date-time)
-    average-duration
-    (str "Avg: ")
-    (d/div {:class "average-duration"})))
+   category
+   :events
+   (sort-by :date-time)
+   average-duration
+   (str "Avg: ")
+   (d/div {:class "average-duration"})))
 
 (defnc since-component [{:keys [category]}]
   (let [sorted-events (->> category :events (sort-by :date-time))
@@ -496,8 +504,10 @@
                          (cond
                            (== 13 (.-which e)) (save-edited-event! state set-state)
                            (== 27 (.-which e)) (cancel-edit! set-state)))})
-        (d/button {:class "save" :on-click #(save-edited-event! state set-state)} "Save")
-        (d/button {:on-click #(cancel-edit! set-state)} "Cancel")))
+        (d/div
+         {:class "edit-actions"}
+         (d/button {:class "save" :on-click #(save-edited-event! state set-state)} "Save")
+         (d/button {:class "cancel" :on-click #(cancel-edit! set-state)} "Cancel"))))
       (d/li
        {:class "event"
         :on-click (partial expand-action event)}
@@ -550,11 +560,14 @@
                      assoc
                      :adding-note
                      (.. % -target -value))})
-      ($ add-button
-         {:state state
-          :set-state set-state
-          :item item
-          :display "Save"})))
+      (d/div
+       {:class "edit-actions"}
+       ($ add-button
+          {:state state
+           :set-state set-state
+           :item item
+           :display "Save"})
+       (d/button {:class "cancel" :on-click #(cancel-add-event! set-state)} "Cancel"))))
    (d/ul
     {:class "events"}
     (let [events (->> item
@@ -783,12 +796,19 @@
                     (when (== 13 (.-which e))
                       (add-category! state set-state)
                       (set-state assoc :new-category "")))})
-   (d/button
-    {:class "add"
-     :on-click (fn []
-                 (add-category! state set-state)
-                 (set-state assoc :new-category ""))}
-    "Add")))
+   (d/div
+    {:class "edit-actions"}
+    (d/button
+     {:class "add"
+      :on-click (fn []
+                  (add-category! state set-state)
+                  (set-state assoc :new-category ""))}
+     "Add")
+    (d/button
+     {:class "cancel"
+      :on-click (fn []
+                  (set-state assoc :new-category ""))}
+     "Cancel"))))
 
 (defnc title-bar []
   (d/div {:class "title-bar"}
