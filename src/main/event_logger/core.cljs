@@ -390,6 +390,36 @@
       (:new-config state)
       [:resource :user :password])))
 
+(defn editing-event? [state category-id event]
+  (let [editing (:editing-event state)]
+    (and (= (:category-id editing) category-id)
+         (= (:original-event editing) event))))
+
+(defn start-editing-event! [state set-state category-id event]
+  (set-state assoc :editing-event {:category-id category-id
+                                   :original-event event
+                                   :time (:date-time event)
+                                   :note (:note event)}))
+
+(defn cancel-edit! [set-state]
+  (set-state dissoc :editing-event))
+
+(defn save-edited-event! [state set-state]
+  (let [{:keys [category-id original-event time note]} (:editing-event state)
+        new-event {:date-time time :note note}]
+    (log-category-change! set-state :delete-event {:category-id category-id :event original-event})
+    (log-category-change! set-state :add-event {:category-id category-id :event new-event})
+    (set-state
+     (fn [s]
+       (let [cat-idx (.indexOf (map :id (:categories s)) category-id)]
+         (-> s
+             (update-in [:categories cat-idx :events]
+                        (fn [events]
+                          (conj
+                           (vec (remove #(= (get-event-time %) (:date-time original-event)) events))
+                           new-event)))
+             (dissoc :editing-event)))))))
+
 ;; define components using the `defnc` macro
 
 (defnc average-component [{:keys [category]}]
@@ -436,24 +466,45 @@
       "X"))))
 
 (defnc event-details
-  [{:keys [event expanded-fn? expand-action delete-action]}]
-  (d/li
-   {:class "event"
-    :on-click (partial expand-action event)}
-   (d/span {:class "date-time"} (:date-time event))
-   (when (not (str/blank? (:note event)))
-     (d/span {:class "note"} (:note event)))
-   (when
-    (expanded-fn? event)
-     (d/span
-      {:class "actions"}
-      " "
-      (d/button
-       {:class "delete"
-        :on-click (partial delete-action event)}
-       "X")))
-   (when (:duration event)
-     (d/div {:class "duration"} (str "(" (:duration event) ")")))))
+  [{:keys [event expanded-fn? expand-action delete-action state set-state category-id]}]
+  (if (editing-event? state category-id event)
+    (d/li
+      {:class "event editing"}
+      (d/input
+        {:class "edit-event-time"
+         :type "datetime-local"
+         :value (get-in state [:editing-event :time])
+         :on-change #(set-state assoc-in [:editing-event :time] (.. % -target -value))})
+      (d/input
+        {:class "edit-event-note"
+         :type "text"
+         :value (get-in state [:editing-event :note])
+         :on-change #(set-state assoc-in [:editing-event :note] (.. % -target -value))})
+      (d/button {:class "save" :on-click #(save-edited-event! state set-state)} "Save")
+      (d/button {:class "cancel" :on-click #(cancel-edit! set-state)} "Cancel"))
+    (d/li
+      {:class "event"
+       :on-click (partial expand-action event)}
+      (d/span {:class "date-time"} (:date-time event))
+      (when (not (str/blank? (:note event)))
+        (d/span {:class "note"} (:note event)))
+      (when
+          (expanded-fn? event)
+        (d/span
+          {:class "actions"}
+          " "
+          (d/button
+            {:class "delete"
+             :on-click (partial delete-action event)}
+            "X")
+          (d/button
+            {:class "edit"
+             :on-click (fn [e]
+                         (.stopPropagation e)
+                         (start-editing-event! state set-state category-id event))}
+            "Edit")))
+      (when (:duration event)
+        (d/div {:class "duration"} (str "(" (:duration event) ")"))))))
 
 (defnc category-details [{:keys [set-state state item]}]
   (d/div
@@ -499,6 +550,9 @@
          ($ event-details
             {:key (str (:id item) "-" (:date-time event))
              :event event
+             :state state
+             :set-state set-state
+             :category-id (:id item)
              :expanded-fn? (partial
                             event-expanded?
                             state
