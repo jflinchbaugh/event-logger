@@ -470,18 +470,19 @@
   (if (editing-event? state category-id event)
     (d/li
       {:class "event editing"}
-      (d/input
-        {:class "edit-event-time"
-         :type "datetime-local"
-         :value (get-in state [:editing-event :time])
-         :on-change #(set-state assoc-in [:editing-event :time] (.. % -target -value))})
-      (d/input
-        {:class "edit-event-note"
-         :type "text"
-         :value (get-in state [:editing-event :note])
-         :on-change #(set-state assoc-in [:editing-event :note] (.. % -target -value))})
-      (d/button {:class "save" :on-click #(save-edited-event! state set-state)} "Save")
-      (d/button {:class "cancel" :on-click #(cancel-edit! set-state)} "Cancel"))
+      (d/div
+        (d/input
+          {:class "new-event"
+           :type "datetime-local"
+           :value (get-in state [:editing-event :time])
+           :on-change #(set-state assoc-in [:editing-event :time] (.. % -target -value))})
+        (d/input
+          {:class "new-event-note"
+           :type "text"
+           :value (get-in state [:editing-event :note])
+           :on-change #(set-state assoc-in [:editing-event :note] (.. % -target -value))})
+        (d/button {:class "save" :on-click #(save-edited-event! state set-state)} "Save")
+        (d/button {:on-click #(cancel-edit! set-state)} "Cancel")))
     (d/li
       {:class "event"
        :on-click (partial expand-action event)}
