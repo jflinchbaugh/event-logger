@@ -334,7 +334,7 @@
           idx (.indexOf (map :id (:categories state)) id)
           event {:date-time time :note note}
           existing-events (get-in state [:categories idx :events])]
-      (when (is-new-event? existing-events time)
+      (when (is-new-event? existing-events event)
         (log-category-change!
          set-state
          :add-event
