@@ -272,10 +272,12 @@
 
 (defn open-category! [state set-state item-id]
   (clear-confirms! set-state)
-  (set-state dissoc :adding-event)
-  (if (= item-id (:display-category state))
-    (set-state dissoc :display-category)
-    (set-state assoc :display-category item-id)))
+  (set-state
+   (fn [s]
+     (let [s (dissoc s :adding-event :adding-note :editing-event)]
+       (if (= item-id (:display-category s))
+         (dissoc s :display-category)
+         (assoc s :display-category item-id))))))
 
 (defn add-category! [state set-state]
   (let [new-cat-name (str/replace
@@ -341,20 +343,25 @@
          (fn [s]
            (-> s
                (update-in [:categories idx :events] conj event)
-               (dissoc :adding-event :adding-note))))))
+               (dissoc :adding-event :adding-note :editing-event))))))
     (do
       (when (not= (:display-category state) id)
         (open-category! state set-state id))
-      (set-state assoc :adding-event (now-str) :adding-note ""))))
+      (set-state
+       (fn [s]
+         (-> s
+             (assoc :adding-event (now-str) :adding-note "")
+             (dissoc :editing-event)))))))
 
 (defn open-delete-event! [state set-state id event]
   (let [new-confirmation {:id id :event (:date-time event)}]
-    (set-confirm!
-     set-state
-     :delete-event
-     (when
-      (not= new-confirmation (get-confirm state :delete-event))
-       new-confirmation))))
+    (set-state
+     (fn [s]
+       (-> s
+           (assoc-in [:confirm :delete-event]
+                     (when (not= new-confirmation (get-confirm s :delete-event))
+                       new-confirmation))
+           (dissoc :adding-event :adding-note :editing-event))))))
 
 (defn delete-event! [state set-state event]
   (log-category-change!
@@ -396,10 +403,14 @@
          (= (:original-event editing) event))))
 
 (defn start-editing-event! [state set-state category-id event]
-  (set-state assoc :editing-event {:category-id category-id
-                                   :original-event event
-                                   :time (:date-time event)
-                                   :note (:note event)}))
+  (set-state
+   (fn [s]
+     (-> s
+         (assoc :editing-event {:category-id category-id
+                                :original-event event
+                                :time (:date-time event)
+                                :note (:note event)})
+         (dissoc :adding-event :adding-note :confirm)))))
 
 (defn cancel-edit! [set-state]
   (set-state dissoc :editing-event))
