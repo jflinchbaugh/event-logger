@@ -149,13 +149,13 @@
 
 (t/deftest test-event
   (t/testing "is-new-event?"
-    (t/is (sut/is-new-event? [] {:date-time "event"}))
+    (t/is (sut/is-new-event? [] {:date-time "2025-01-01T01:01:01"}))
     (t/is (sut/is-new-event?
-           [{:date-time "other"}]
-           {:date-time "event"}))
+           [{:date-time "2025-01-01T01:01:02"}]
+           {:date-time "2025-01-01T01:01:01"}))
     (t/is (not (sut/is-new-event?
-                [{:date-time "event"}]
-                {:date-time "event"}))))
+                [{:date-time "2025-01-01T01:01:01"}]
+                {:date-time "2025-01-01T01:01:01"}))))
   (t/testing "adding-event?"
     (t/is (not (sut/adding-event? {})))
     (t/is (sut/adding-event? {:adding-event "event"}))))

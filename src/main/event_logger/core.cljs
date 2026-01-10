@@ -44,7 +44,7 @@
 (defn get-event-time
   "read date-time of events"
   [event]
-  (:date-time event))
+  (normalize-date-str (:date-time event)))
 
 (defn normalize-event
   [event]
@@ -389,7 +389,7 @@
            :events
            (fn [events]
              (remove
-              #(= (get-event-time %) (:date-time event))
+              #(= (get-event-time %) (get-event-time event))
               events)))))
       cats)))
   (clear-confirms! set-state))
@@ -449,7 +449,7 @@
                                     (remove
                                       #(=
                                          (get-event-time %)
-                                         (:date-time original-event))
+                                         (get-event-time original-event))
                                       events))
                                   new-event))))))
              (dissoc :editing-event)))))))
