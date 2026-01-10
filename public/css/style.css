@@ -313,6 +313,7 @@ button.delete {
 }
 
 .dragging {
-  background-color: ;
+  background-color: rgba(0, 0, 0, 0.05);
+  border: 2px dashed #ccc;
   border-radius: 1rem;
 }

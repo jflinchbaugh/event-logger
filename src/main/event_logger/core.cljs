@@ -613,39 +613,49 @@
 
 (defnc categories [{:keys [state set-state]}]
   (let [categories (:categories state)
-        drag-item (hooks/use-ref nil)
-        drag-over-item (hooks/use-ref nil)
+        [drag-state set-drag-state] (hooks/use-state nil)
+
+        display-categories (if (and drag-state
+                                    (not= (:from drag-state) (:to drag-state)))
+                             (move categories (:from drag-state) (:to drag-state))
+                             categories)
+
         handle-drag-start (fn [e position]
-                            (reset! drag-item position)
+                            (set-drag-state {:from position :to position})
                             (set!
                              (.. e -dataTransfer -effectAllowed)
                              "move")
+                            (let [img (js/Image.)]
+                              (set! (.-src img) "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
+                              (.. e -dataTransfer (setDragImage img 0 0)))
                             (.. e -dataTransfer
-                                (setData "text/html" (.. e -target)))
-                            (.. e -target -classList (add "dragging")))
-        handle-drag-enter (fn [_ position]
-                            (reset! drag-over-item position))
+                                (setData "text/html" (.. e -target))))
+
+        handle-drag-enter (fn [e position]
+                            (when drag-state
+                              (set-drag-state assoc :to position)))
 
         handle-drag-end (fn [e]
-                          (when (not= @drag-item @drag-over-item)
+                          (when (and drag-state
+                                     (not= (:from drag-state) (:to drag-state)))
                             (log-category-change!
                              set-state
                              :move-category
-                             {:from (get-in state [:categories @drag-item :id])
-                              :to (get-in state [:categories @drag-over-item :id])})
-                            (.. e -target -classList (remove "dragging"))
+                             {:from-index (:from drag-state)
+                              :to-index (:to drag-state)
+                              :category-id (get-in categories [(:from drag-state) :id])})
                             (set-state move-category
-                                       @drag-item
-                                       @drag-over-item))
-                          (reset! drag-item nil)
-                          (reset! drag-over-item nil))]
+                                       (:from drag-state)
+                                       (:to drag-state)))
+                          (set-drag-state nil))]
 
     (d/ul
      (doall
-      (for [[index item] (map-indexed (fn [i v] [i v]) categories)]
+      (for [[index item] (map-indexed (fn [i v] [i v]) display-categories)]
         (d/li
          {:key (:id item)
           :draggable true
+          :class (when (and drag-state (= index (:to drag-state))) "dragging")
           :on-drag-start (fn [e] (handle-drag-start e index))
           :on-drag-enter (fn [e] (handle-drag-enter e index))
           :on-drag-end handle-drag-end
