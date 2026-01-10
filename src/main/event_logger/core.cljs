@@ -359,7 +359,8 @@
      (fn [s]
        (-> s
            (assoc-in [:confirm :delete-event]
-                     (when (not= new-confirmation (get-confirm s :delete-event))
+                     (when
+                      (not= new-confirmation (get-confirm s :delete-event))
                        new-confirmation))
            (dissoc :adding-event :adding-note :editing-event))))))
 
@@ -435,7 +436,12 @@
              (update-in [:categories cat-idx :events]
                         (fn [events]
                           (conj
-                           (vec (remove #(= (get-event-time %) (:date-time original-event)) events))
+                           (vec
+                            (remove
+                             #(=
+                               (get-event-time %)
+                               (:date-time original-event))
+                             events))
                            new-event)))
              (dissoc :editing-event)))))))
 
@@ -485,7 +491,13 @@
       "X"))))
 
 (defnc event-details
-  [{:keys [event expanded-fn? expand-action delete-action state set-state category-id]}]
+  [{:keys [event
+           expanded-fn?
+           expand-action
+           delete-action
+           state
+           set-state
+           category-id]}]
   (let [editing? (editing-event? state category-id event)
         note-ref (hooks/use-ref nil)]
     (hooks/use-effect
@@ -500,7 +512,10 @@
          {:class "new-event"
           :type "datetime-local"
           :value (get-in state [:editing-event :time])
-          :on-change #(set-state assoc-in [:editing-event :time] (.. % -target -value))
+          :on-change #(set-state
+                       assoc-in
+                       [:editing-event :time]
+                       (.. % -target -value))
           :on-key-down (fn [e]
                          (cond
                            (== 13 (.-which e)) (save-edited-event! state set-state)
@@ -510,15 +525,24 @@
           :type "text"
           :ref note-ref
           :value (get-in state [:editing-event :note])
-          :on-change #(set-state assoc-in [:editing-event :note] (.. % -target -value))
+          :on-change #(set-state
+                        assoc-in
+                        [:editing-event :note]
+                        (.. % -target -value))
           :on-key-down (fn [e]
                          (cond
                            (== 13 (.-which e)) (save-edited-event! state set-state)
                            (== 27 (.-which e)) (cancel-edit! set-state)))})
         (d/div
          {:class "edit-actions"}
-         (d/button {:class "save" :on-click #(save-edited-event! state set-state)} "Save")
-         (d/button {:class "cancel" :on-click #(cancel-edit! set-state)} "Cancel"))))
+         (d/button
+          {:class "save"
+           :on-click #(save-edited-event! state set-state)}
+          "Save")
+         (d/button
+           {:class "cancel"
+            :on-click #(cancel-edit! set-state)}
+           "Cancel"))))
       (d/li
        {:class "event"
         :on-click (partial expand-action event)}
@@ -537,7 +561,11 @@
             {:class "edit"
              :on-click (fn [e]
                          (.stopPropagation e)
-                         (start-editing-event! state set-state category-id event))}
+                         (start-editing-event!
+                           state
+                           set-state
+                           category-id
+                           event))}
             "Edit"))))
        (when (not (str/blank? (:note event)))
          (d/div {:class "note"} (:note event)))
@@ -578,7 +606,10 @@
            :set-state set-state
            :item item
            :display "Save"})
-       (d/button {:class "cancel" :on-click #(cancel-add-event! set-state)} "Cancel"))))
+       (d/button
+         {:class "cancel"
+          :on-click #(cancel-add-event! set-state)}
+         "Cancel"))))
    (d/ul
     {:class "events"}
     (let [events (->> item
@@ -616,8 +647,13 @@
         [drag-state set-drag-state] (hooks/use-state nil)
 
         display-categories (if (and drag-state
-                                    (not= (:from drag-state) (:to drag-state)))
-                             (move categories (:from drag-state) (:to drag-state))
+                                    (not=
+                                      (:from drag-state)
+                                      (:to drag-state)))
+                             (move
+                               categories
+                               (:from drag-state)
+                               (:to drag-state))
                              categories)
 
         handle-drag-start (fn [e position]
@@ -625,9 +661,13 @@
                             (set!
                              (.. e -dataTransfer -effectAllowed)
                              "move")
-                            (.. e -dataTransfer (setDragImage (js/document.createElement "canvas") 0 0))
-                            (.. e -dataTransfer
-                                (setData "text/html" (.. e -target))))
+                            (.. e
+                              -dataTransfer
+                              (setDragImage
+                                (js/document.createElement "canvas") 0 0))
+                            (.. e
+                              -dataTransfer
+                              (setData "text/html" (.. e -target))))
 
         handle-drag-enter (fn [e position]
                             (when drag-state
@@ -635,13 +675,16 @@
 
         handle-drag-end (fn [e]
                           (when (and drag-state
-                                     (not= (:from drag-state) (:to drag-state)))
+                                     (not=
+                                       (:from drag-state)
+                                       (:to drag-state)))
                             (log-category-change!
                              set-state
                              :move-category
                              {:from-index (:from drag-state)
                               :to-index (:to drag-state)
-                              :category-id (get-in categories [(:from drag-state) :id])})
+                              :category-id (get-in categories
+                                             [(:from drag-state) :id])})
                             (set-state move-category
                                        (:from drag-state)
                                        (:to drag-state)))
@@ -686,7 +729,11 @@
       (d/div
        {:class "toast-container"}
        (d/div
-        {:class (str "toast " (if (get-in state [:network-response :success]) "success" "error"))
+        {:class (str
+                  "toast "
+                  (if (get-in state [:network-response :success])
+                    "success"
+                    "error"))
          :on-click #(set-state assoc :network-response nil)}
         (if (get-in state [:network-response :success])
           (str (:network-action state) " succeeded!")
