@@ -11,6 +11,7 @@
             [clojure.edn :as edn]
             [cljs.core.async :refer [<! go]]
             [goog.string :refer [format]])
+  (:import [goog.events KeyCodes])
   (:require-macros [event-logger.build-info :as build-info]))
 
 (def response-display-ms 3000)
@@ -445,6 +446,11 @@
                            new-event)))
              (dissoc :editing-event)))))))
 
+(defn handle-edit-keydown [state set-state e]
+  (cond
+    (== KeyCodes/ENTER (.-which e)) (save-edited-event! state set-state)
+    (== KeyCodes/ESC (.-which e)) (cancel-edit! set-state)))
+
 ;; define components using the `defnc` macro
 
 (defnc average-component [{:keys [category]}]
@@ -516,23 +522,17 @@
                        assoc-in
                        [:editing-event :time]
                        (.. % -target -value))
-          :on-key-down (fn [e]
-                         (cond
-                           (== 13 (.-which e)) (save-edited-event! state set-state)
-                           (== 27 (.-which e)) (cancel-edit! set-state)))})
+          :on-key-down (partial handle-edit-keydown state set-state)})
         (d/input
          {:class "new-event-note"
           :type "text"
           :ref note-ref
           :value (get-in state [:editing-event :note])
           :on-change #(set-state
-                        assoc-in
-                        [:editing-event :note]
-                        (.. % -target -value))
-          :on-key-down (fn [e]
-                         (cond
-                           (== 13 (.-which e)) (save-edited-event! state set-state)
-                           (== 27 (.-which e)) (cancel-edit! set-state)))})
+                       assoc-in
+                       [:editing-event :note]
+                       (.. % -target -value))
+          :on-key-down (partial handle-edit-keydown state set-state)})
         (d/div
          {:class "edit-actions"}
          (d/button
@@ -540,9 +540,9 @@
            :on-click #(save-edited-event! state set-state)}
           "Save")
          (d/button
-           {:class "cancel"
-            :on-click #(cancel-edit! set-state)}
-           "Cancel"))))
+          {:class "cancel"
+           :on-click #(cancel-edit! set-state)}
+          "Cancel"))))
       (d/li
        {:class "event"
         :on-click (partial expand-action event)}
@@ -562,10 +562,10 @@
              :on-click (fn [e]
                          (.stopPropagation e)
                          (start-editing-event!
-                           state
-                           set-state
-                           category-id
-                           event))}
+                          state
+                          set-state
+                          category-id
+                          event))}
             "Edit"))))
        (when (not (str/blank? (:note event)))
          (d/div {:class "note"} (:note event)))
@@ -607,9 +607,9 @@
            :item item
            :display "Save"})
        (d/button
-         {:class "cancel"
-          :on-click #(cancel-add-event! set-state)}
-         "Cancel"))))
+        {:class "cancel"
+         :on-click #(cancel-add-event! set-state)}
+        "Cancel"))))
    (d/ul
     {:class "events"}
     (let [events (->> item
@@ -648,12 +648,12 @@
 
         display-categories (if (and drag-state
                                     (not=
-                                      (:from drag-state)
-                                      (:to drag-state)))
+                                     (:from drag-state)
+                                     (:to drag-state)))
                              (move
-                               categories
-                               (:from drag-state)
-                               (:to drag-state))
+                              categories
+                              (:from drag-state)
+                              (:to drag-state))
                              categories)
 
         handle-drag-start (fn [e position]
@@ -662,12 +662,12 @@
                              (.. e -dataTransfer -effectAllowed)
                              "move")
                             (.. e
-                              -dataTransfer
-                              (setDragImage
-                                (js/document.createElement "canvas") 0 0))
+                                -dataTransfer
+                                (setDragImage
+                                 (js/document.createElement "canvas") 0 0))
                             (.. e
-                              -dataTransfer
-                              (setData "text/html" (.. e -target))))
+                                -dataTransfer
+                                (setData "text/html" (.. e -target))))
 
         handle-drag-enter (fn [e position]
                             (when drag-state
@@ -676,15 +676,15 @@
         handle-drag-end (fn [e]
                           (when (and drag-state
                                      (not=
-                                       (:from drag-state)
-                                       (:to drag-state)))
+                                      (:from drag-state)
+                                      (:to drag-state)))
                             (log-category-change!
                              set-state
                              :move-category
                              {:from-index (:from drag-state)
                               :to-index (:to drag-state)
                               :category-id (get-in categories
-                                             [(:from drag-state) :id])})
+                                                   [(:from drag-state) :id])})
                             (set-state move-category
                                        (:from drag-state)
                                        (:to drag-state)))
@@ -730,10 +730,10 @@
        {:class "toast-container"}
        (d/div
         {:class (str
-                  "toast "
-                  (if (get-in state [:network-response :success])
-                    "success"
-                    "error"))
+                 "toast "
+                 (if (get-in state [:network-response :success])
+                   "success"
+                   "error"))
          :on-click #(set-state assoc :network-response nil)}
         (if (get-in state [:network-response :success])
           (str (:network-action state) " succeeded!")
@@ -859,7 +859,7 @@
                    assoc
                    :new-category (.. e -target -value)))
      :on-key-down (fn [e]
-                    (when (== 13 (.-which e))
+                    (when (== KeyCodes/ENTER (.-which e))
                       (add-category! state set-state)
                       (set-state assoc :new-category "")))})
    (d/div
