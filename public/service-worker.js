@@ -19,7 +19,8 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // If network request is successful, clone the response and put it in cache
+        // If network request is successful,
+        // clone the response and put it in cache
         const responseToCache = response.clone();
         caches.open(CACHE_NAME)
           .then(cache => {
