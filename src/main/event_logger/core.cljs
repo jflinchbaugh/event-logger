@@ -539,10 +539,6 @@
            category-id]}]
   (let [editing? (editing-event? state category-id event)
         note-ref (hooks/use-ref nil)]
-    (hooks/use-effect
-     [editing?]
-     (when editing?
-       (some-> note-ref .-current .focus)))
     (if editing?
       (d/li
        {:class "event editing"}
@@ -609,10 +605,6 @@
 (defnc category-details [{:keys [set-state state item]}]
   (let [adding? (:adding-event state)
         note-ref (hooks/use-ref nil)]
-    (hooks/use-effect
-     [adding?]
-     (when adding?
-       (some-> note-ref .-current .focus)))
     (d/div
      {:class "details" :id (str "details-" (:id item))}
      (d/div {:class "event-header"}
