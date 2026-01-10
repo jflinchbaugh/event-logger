@@ -134,6 +134,7 @@
                    :data category-data}))
 
 (defn configured?
+  "is the app configured and able to upload/download data?"
   [resource user password]
   (and
    (not (str/blank? resource))
