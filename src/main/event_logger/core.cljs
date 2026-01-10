@@ -625,9 +625,7 @@
                             (set!
                              (.. e -dataTransfer -effectAllowed)
                              "move")
-                            (let [img (js/Image.)]
-                              (set! (.-src img) "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7")
-                              (.. e -dataTransfer (setDragImage img 0 0)))
+                            (.. e -dataTransfer (setDragImage (js/document.createElement "canvas") 0 0))
                             (.. e -dataTransfer
                                 (setData "text/html" (.. e -target))))
 
