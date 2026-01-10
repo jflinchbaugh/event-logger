@@ -42,8 +42,7 @@
    format-date-time))
 
 (defn get-event-time
-  "read date-time of events in old format (date string only)
-   or new format (as a map with a :date-time)"
+  "read date-time of events"
   [event]
   (:date-time event))
 
@@ -51,8 +50,8 @@
   [event]
   (let [t (get-event-time event)
         l (:note event)]
-    {:date-time (normalize-date-str t)
-     :note l}))
+    {:note l
+     :date-time (normalize-date-str t)}))
 
 (defn describe-diff [diff]
   (let [days (t/days diff)
@@ -330,10 +329,10 @@
 (defn add-event! [state set-state id]
   (clear-confirms! set-state)
   (if (adding-event? state)
-    (let [time (:adding-event state)
+    (let [time (normalize-date-str (:adding-event state))
           note (str/trim (or (:adding-note state) ""))
           idx (.indexOf (map :id (:categories state)) id)
-          event {:date-time time :note note}
+          event {:note note :date-time time}
           existing-events (get-in state [:categories idx :events])]
       (when (is-new-event? existing-events event)
         (log-category-change!
@@ -343,7 +342,11 @@
         (set-state
          (fn [s]
            (-> s
-               (update-in [:categories idx :events] conj event)
+             (update-in [:categories idx :events]
+               (fn [events]
+                 (reverse
+                   (sort-by :date-time
+                     (conj events event)))))
                (dissoc :adding-event :adding-note :editing-event))))))
     (do
       (when (not= (:display-category state) id)
@@ -423,7 +426,7 @@
 (defn save-edited-event! [state set-state]
   (let [{:keys [category-id original-event time note]} (:editing-event state)
         note (str/trim (or note ""))
-        new-event {:date-time time :note note}]
+        new-event {:date-time (normalize-date-str time) :note note}]
     (log-category-change!
      set-state :delete-event
      {:category-id category-id :event original-event})
@@ -436,14 +439,16 @@
          (-> s
              (update-in [:categories cat-idx :events]
                         (fn [events]
-                          (conj
-                           (vec
-                            (remove
-                             #(=
-                               (get-event-time %)
-                               (:date-time original-event))
-                             events))
-                           new-event)))
+                          (reverse
+                            (sort-by :date-time
+                              (conj
+                                (vec
+                                  (remove
+                                    #(=
+                                       (get-event-time %)
+                                       (:date-time original-event))
+                                    events))
+                                new-event)))))
              (dissoc :editing-event)))))))
 
 (defn enter-key? [e]
