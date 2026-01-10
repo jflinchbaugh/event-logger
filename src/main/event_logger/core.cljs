@@ -446,10 +446,35 @@
                            new-event)))
              (dissoc :editing-event)))))))
 
-(defn handle-edit-keydown [state set-state e]
+(defn enter-key? [e]
+  (== KeyCodes/ENTER (.-which e)))
+
+(defn esc-key? [e]
+  (== KeyCodes/ESC (.-which e)))
+
+(defn handle-keydown [on-enter on-esc e]
   (cond
-    (== KeyCodes/ENTER (.-which e)) (save-edited-event! state set-state)
-    (== KeyCodes/ESC (.-which e)) (cancel-edit! set-state)))
+    (enter-key? e) (on-enter)
+    (esc-key? e) (on-esc)))
+
+(defn handle-edit-keydown [state set-state e]
+  (handle-keydown
+   #(save-edited-event! state set-state)
+   #(cancel-edit! set-state)
+   e))
+
+(defn handle-add-keydown [state set-state item-id e]
+  (handle-keydown
+   #(add-event! state set-state item-id)
+   #(cancel-add-event! set-state)
+   e))
+
+(defn handle-add-category-keydown [state set-state e]
+  (handle-keydown
+   #(do (add-category! state set-state)
+        (set-state assoc :new-category ""))
+   #(set-state assoc :new-category "")
+   e))
 
 ;; define components using the `defnc` macro
 
@@ -573,74 +598,83 @@
          (d/div {:class "duration"} (str "(" (:duration event) ")")))))))
 
 (defnc category-details [{:keys [set-state state item]}]
-  (d/div
-   {:class "details" :id (str "details-" (:id item))}
-   (d/div {:class "event-header"}
-          ($ since-component {:category item})
-          ($ average-component {:category item}))
-   (when (:adding-event state)
-     (d/div
-      (d/input
-       {:class "new-event"
-        :type "datetime-local"
-        :enterKeyHint "done"
-        :value (:adding-event state)
-        :name :new-event
-        :on-change #(set-state
-                     assoc
-                     :adding-event
-                     (.. % -target -value))})
-      (d/input
-       {:class "new-event-note"
-        :type "text"
-        :placeholder "Note"
-        :value (:adding-note state)
-        :on-change #(set-state
-                     assoc
-                     :adding-note
-                     (.. % -target -value))})
-      (d/div
-       {:class "edit-actions"}
-       ($ add-button
-          {:state state
-           :set-state set-state
-           :item item
-           :display "Save"})
-       (d/button
-        {:class "cancel"
-         :on-click #(cancel-add-event! set-state)}
-        "Cancel"))))
-   (d/ul
-    {:class "events"}
-    (let [events (->> item
-                      :events
-                      (map normalize-event)
-                      (sort-by :date-time)
-                      add-durations)]
-      (doall
-       (for [event (reverse events)]
-         ($ event-details
-            {:key (str (:id item) "-" (:date-time event))
-             :event event
-             :state state
+  (let [adding? (:adding-event state)
+        note-ref (hooks/use-ref nil)]
+    (hooks/use-effect
+     [adding?]
+     (when adding?
+       (some-> note-ref .-current .focus)))
+    (d/div
+     {:class "details" :id (str "details-" (:id item))}
+     (d/div {:class "event-header"}
+            ($ since-component {:category item})
+            ($ average-component {:category item}))
+     (when adding?
+       (d/div
+        (d/input
+         {:class "new-event"
+          :type "datetime-local"
+          :enterKeyHint "done"
+          :value (:adding-event state)
+          :name :new-event
+          :on-change #(set-state
+                       assoc
+                       :adding-event
+                       (.. % -target -value))
+          :on-key-down (partial handle-add-keydown state set-state (:id item))})
+        (d/input
+         {:class "new-event-note"
+          :type "text"
+          :placeholder "Note"
+          :ref note-ref
+          :value (:adding-note state)
+          :on-change #(set-state
+                       assoc
+                       :adding-note
+                       (.. % -target -value))
+          :on-key-down (partial handle-add-keydown state set-state (:id item))})
+        (d/div
+         {:class "edit-actions"}
+         ($ add-button
+            {:state state
              :set-state set-state
-             :category-id (:id item)
-             :expanded-fn? (partial
-                            event-expanded?
-                            state
-                            item)
-             :expand-action (partial
-                             open-delete-event!
-                             state
-                             set-state
-                             (:id item))
-             :delete-action (partial
-                             delete-event!
-                             state
-                             set-state
-                             event)}))))
-    ($ category-controls
-       {:state state :set-state set-state :item-id (:id item)}))))
+             :item item
+             :display "Save"})
+         (d/button
+          {:class "cancel"
+           :on-click #(cancel-add-event! set-state)}
+          "Cancel"))))
+     (d/ul
+      {:class "events"}
+      (let [events (->> item
+                        :events
+                        (map normalize-event)
+                        (sort-by :date-time)
+                        add-durations)]
+        (doall
+         (for [event (reverse events)]
+           ($ event-details
+              {:key (str (:id item) "-" (:date-time event))
+               :event event
+               :state state
+               :set-state set-state
+               :category-id (:id item)
+               :expanded-fn? (partial
+                              event-expanded?
+                              state
+                              item)
+               :expand-action (partial
+                               open-delete-event!
+                               state
+                               set-state
+                               (:id item))
+               :delete-action (partial
+                               delete-event!
+                               state
+                               set-state
+                               event)}))))
+      ($ category-controls
+         {:state state :set-state set-state :item-id (:id item)})))))
 
 (defnc categories [{:keys [state set-state]}]
   (let [categories (:categories state)
@@ -858,10 +892,7 @@
                   (set-state
                    assoc
                    :new-category (.. e -target -value)))
-     :on-key-down (fn [e]
-                    (when (== KeyCodes/ENTER (.-which e))
-                      (add-category! state set-state)
-                      (set-state assoc :new-category "")))})
+     :on-key-down (partial handle-add-category-keydown state set-state)})
    (d/div
     {:class "edit-actions"}
     (d/button
