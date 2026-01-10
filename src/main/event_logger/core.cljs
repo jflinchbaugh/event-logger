@@ -345,9 +345,10 @@
            (-> s
              (update-in [:categories idx :events]
                (fn [events]
-                 (reverse
-                   (sort-by :date-time
-                     (conj events event)))))
+                 (map normalize-event
+                   (reverse
+                     (sort-by :date-time
+                       (conj events event))))))
                (dissoc :adding-event :adding-note :editing-event))))))
     (do
       (when (not= (:display-category state) id)
@@ -440,16 +441,17 @@
          (-> s
              (update-in [:categories cat-idx :events]
                         (fn [events]
-                          (reverse
-                            (sort-by :date-time
-                              (conj
-                                (vec
-                                  (remove
-                                    #(=
-                                       (get-event-time %)
-                                       (:date-time original-event))
-                                    events))
-                                new-event)))))
+                          (map normalize-event
+                            (reverse
+                              (sort-by :date-time
+                                (conj
+                                  (vec
+                                    (remove
+                                      #(=
+                                         (get-event-time %)
+                                         (:date-time original-event))
+                                      events))
+                                  new-event))))))
              (dissoc :editing-event)))))))
 
 (defn enter-key? [e]
@@ -548,6 +550,7 @@
         (d/input
          {:class "new-event"
           :type "datetime-local"
+          :step "1"
           :value (get-in state [:editing-event :time])
           :on-change #(set-state
                        assoc-in
@@ -620,6 +623,7 @@
         (d/input
          {:class "new-event"
           :type "datetime-local"
+          :step "1"
           :enterKeyHint "done"
           :value (:adding-event state)
           :name :new-event
