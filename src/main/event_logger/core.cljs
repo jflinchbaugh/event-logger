@@ -114,14 +114,6 @@
 
 (defn write-local-storage!
   [version config categories categories-log]
-  #_(tel/log!
-   :info
-   {:write-local-storage
-    {:version version
-     :config config
-     :categories categories
-     :categories-log categories-log}})
-
   (ls/set-item! :version version)
   (ls/set-item! :config config)
   (ls/set-item! :categories categories)
@@ -156,7 +148,6 @@
     (let [config (:config state)
           {:keys [resource user password]} config]
       (when (or force (configured? resource user password))
-        (tel/log! {:level :info :msg "uploading" :data config})
         (set-state assoc :network-action "Upload")
         (go
           (let [response (->
@@ -191,7 +182,6 @@
 
 (defn download!
   [config set-state]
-  (tel/log! :info "downloading")
   (set-state assoc :network-action "Download")
   (go
     (let [{:keys [resource user password]} config
@@ -406,7 +396,6 @@
 
 (defn save-config!
   [state set-state]
-  (tel/log! :info "saving config")
   (set-state
    assoc
    :config
@@ -775,6 +764,9 @@
      (when show?
        (d/div
         {:class "wrapper"}
+         (d/div
+           {:class "row"}
+           (d/div "Build Date: " build-date))
         (d/div
          {:class "row"}
          (d/button
@@ -810,10 +802,7 @@
           (obfuscate :config)
           (obfuscate :new-config)
           pp/pprint
-          with-out-str))
-        (d/div
-         {:class "row"}
-         (d/div "Build Date: " build-date)))))))
+          with-out-str)))))))
 
 (defnc config [{:keys [state set-state]}]
   (let [[show? set-show] (hooks/use-state false)]
@@ -946,7 +935,6 @@
        (set-last-upload
          merge
          (select-keys state [:categories :categories-log]))
-       (tel/log! :info {:last-upload last-upload})
        ))
 
     (<>
