@@ -908,26 +908,24 @@
         [last-upload set-last-upload] (hooks/use-state
                                        (select-keys
                                         local-data
-                                        [:categories]))
+                                        [:categories :categories-log]))
         processed-log-ref (hooks/use-ref (count (:categories-log local-data)))]
 
-    ;; watch changelog and apply changes to persistent categories state
+    ;; watch categories-log and apply changes to persistent categories state
     (hooks/use-effect
      [(:categories-log state)]
      (let [log (:categories-log state)
            cnt (count log)
            processed @processed-log-ref]
-       (if (> cnt processed)
+       (when (> cnt processed)
          (let [new-entries (subvec log processed)
                current-categories (:categories state)
                new-categories (reduce
                                 apply-log-entry
                                 current-categories
                                 new-entries)]
-           (reset! processed-log-ref cnt)
-           (set-state assoc :categories new-categories))
-         (when (< cnt processed)
-           (reset! processed-log-ref cnt)))))
+           (set-state assoc :categories new-categories)))
+       (reset! processed-log-ref cnt)))
 
     ;; update local storage
     (hooks/use-effect
@@ -940,15 +938,16 @@
 
     ;; upload changes
     (hooks/use-effect
-      [(:categories state) (:categories-log state)]
+      [(:categories state)]
      (when-not
-      (=
-        (select-keys state [:categories :categories-log])
-        (select-keys last-upload [:categories :categories-log]))
+      (= (select-keys state [:categories :categories-log])
+         (select-keys last-upload [:categories :categories-log]))
        (upload! false state set-state)
        (set-last-upload
          merge
-         (select-keys state [:categories :categories-log]))))
+         (select-keys state [:categories :categories-log]))
+       (tel/log! :info {:last-upload last-upload})
+       ))
 
     (<>
      ($ title-bar)
