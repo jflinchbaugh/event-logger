@@ -114,7 +114,7 @@
 
 (defn write-local-storage!
   [version config categories categories-log]
-  (tel/log!
+  #_(tel/log!
    :info
    {:write-local-storage
     {:version version
@@ -168,7 +168,8 @@
                             :content-type :text/plain
                             :body (str
                                    {:date (now-str)
-                                    :categories (:categories state)})})
+                                    :categories (:categories state)
+                                    :categories-log (:categories-log state)})})
                           <!)
                 edn-response (-> response
                                  :body
@@ -291,21 +292,16 @@
     (when (not (str/blank? new-cat-name))
       (if (existing-categories new-cat-id)
         (open-category! state set-state new-cat-id)
-        (do
-          (log-category-change!
-           set-state
-           :add-category
-           {:id new-cat-id :name new-cat-name})
-          (set-state update :categories
-                     conj {:id new-cat-id :name new-cat-name}))))))
+        (log-category-change!
+         set-state
+         :add-category
+         {:id new-cat-id :name new-cat-name})))))
 
 (defn delete-category! [state set-state item-id]
   (log-category-change!
    set-state
    :delete-category
    {:id item-id})
-  (set-state update :categories
-             (comp vec (partial remove (comp #{item-id} :id))))
   (open-category! state set-state nil))
 
 (defn remove-at-index [lst index]
@@ -325,6 +321,42 @@
 (defn move-category [state from to]
   (update-in state [:categories] move from to))
 
+(defn apply-log-entry [categories {:keys [type data]}]
+  (case type
+    :add-category
+    (conj categories {:id (:id data) :name (:name data)})
+
+    :delete-category
+    (vec (remove #(= (:id %) (:id data)) categories))
+
+    :move-category
+    (move categories (:from-index data) (:to-index data))
+
+    :add-event
+    (let [{:keys [category-id event]} data
+          idx (first (keep-indexed #(when (= (:id %2) category-id) %1) categories))]
+      (if idx
+        (update-in categories [idx :events]
+                   (fn [events]
+                     (map normalize-event
+                          (reverse
+                           (sort-by :date-time
+                                    (conj events event))))))
+        categories))
+
+    :delete-event
+    (let [{:keys [category-id event]} data
+          idx (first (keep-indexed #(when (= (:id %2) category-id) %1) categories))]
+      (if idx
+        (update-in categories [idx :events]
+                   (fn [events]
+                     (remove
+                      #(= (get-event-time %) (get-event-time event))
+                      events)))
+        categories))
+
+    categories))
+
 ;; event actions
 
 (defn add-event! [state set-state id]
@@ -343,12 +375,6 @@
         (set-state
          (fn [s]
            (-> s
-             (update-in [:categories idx :events]
-               (fn [events]
-                 (map normalize-event
-                   (reverse
-                     (sort-by :date-time
-                       (conj events event))))))
                (dissoc :adding-event :adding-note :editing-event))))))
     (do
       (when (not= (:display-category state) id)
@@ -376,22 +402,6 @@
    :delete-event
    {:category-id (:id (get-confirm state :delete-event))
     :event event})
-  (set-state
-   update
-   :categories
-   (fn [cats]
-     (mapv
-      (fn [cat]
-        (if (not= (:id (get-confirm state :delete-event)) (:id cat))
-          cat
-          (update
-           cat
-           :events
-           (fn [events]
-             (remove
-              #(= (get-event-time %) (get-event-time event))
-              events)))))
-      cats)))
   (clear-confirms! set-state))
 
 (defn save-config!
@@ -435,24 +445,7 @@
     (log-category-change!
      set-state :add-event
      {:category-id category-id :event new-event})
-    (set-state
-     (fn [s]
-       (let [cat-idx (.indexOf (map :id (:categories s)) category-id)]
-         (-> s
-             (update-in [:categories cat-idx :events]
-                        (fn [events]
-                          (map normalize-event
-                            (reverse
-                              (sort-by :date-time
-                                (conj
-                                  (vec
-                                    (remove
-                                      #(=
-                                         (get-event-time %)
-                                         (get-event-time original-event))
-                                      events))
-                                  new-event))))))
-             (dissoc :editing-event)))))))
+    (set-state dissoc :editing-event)))
 
 (defn enter-key? [e]
   (== KeyCodes/ENTER (.-which e)))
@@ -537,8 +530,7 @@
            state
            set-state
            category-id]}]
-  (let [editing? (editing-event? state category-id event)
-        note-ref (hooks/use-ref nil)]
+  (let [editing? (editing-event? state category-id event)]
     (if editing?
       (d/li
        {:class "event editing"}
@@ -556,7 +548,6 @@
         (d/input
          {:class "new-event-note"
           :type "text"
-          :ref note-ref
           :value (get-in state [:editing-event :note])
           :on-change #(set-state
                        assoc-in
@@ -603,8 +594,7 @@
          (d/div {:class "duration"} (str "(" (:duration event) ")")))))))
 
 (defnc category-details [{:keys [set-state state item]}]
-  (let [adding? (:adding-event state)
-        note-ref (hooks/use-ref nil)]
+  (let [adding? (:adding-event state)]
     (d/div
      {:class "details" :id (str "details-" (:id item))}
      (d/div {:class "event-header"}
@@ -628,7 +618,6 @@
          {:class "new-event-note"
           :type "text"
           :placeholder "Note"
-          :ref note-ref
           :value (:adding-note state)
           :on-change #(set-state
                        assoc
@@ -720,10 +709,7 @@
                              {:from-index (:from drag-state)
                               :to-index (:to drag-state)
                               :category-id (get-in categories
-                                                   [(:from drag-state) :id])})
-                            (set-state move-category
-                                       (:from drag-state)
-                                       (:to drag-state)))
+                                                   [(:from drag-state) :id])}))
                           (set-drag-state nil))]
 
     (d/ul
@@ -922,10 +908,30 @@
         [last-upload set-last-upload] (hooks/use-state
                                        (select-keys
                                         local-data
-                                        [:categories]))]
+                                        [:categories]))
+        processed-log-ref (hooks/use-ref (count (:categories-log local-data)))]
+
+    ;; watch changelog and apply changes to persistent categories state
+    (hooks/use-effect
+     [(:categories-log state)]
+     (let [log (:categories-log state)
+           cnt (count log)
+           processed @processed-log-ref]
+       (if (> cnt processed)
+         (let [new-entries (subvec log processed)
+               current-categories (:categories state)
+               new-categories (reduce
+                                apply-log-entry
+                                current-categories
+                                new-entries)]
+           (reset! processed-log-ref cnt)
+           (set-state assoc :categories new-categories))
+         (when (< cnt processed)
+           (reset! processed-log-ref cnt)))))
+
     ;; update local storage
     (hooks/use-effect
-     [state]
+      [(:config state) (:categories state) (:categories-log state)]
      (write-local-storage!
       "2"
       (:config state)
@@ -934,11 +940,15 @@
 
     ;; upload changes
     (hooks/use-effect
-     [state]
+      [(:categories state) (:categories-log state)]
      (when-not
-      (= (:categories state) (:categories last-upload))
+      (=
+        (select-keys state [:categories :categories-log])
+        (select-keys last-upload [:categories :categories-log]))
        (upload! false state set-state)
-       (set-last-upload assoc :categories (:categories state))))
+       (set-last-upload
+         merge
+         (select-keys state [:categories :categories-log]))))
 
     (<>
      ($ title-bar)
