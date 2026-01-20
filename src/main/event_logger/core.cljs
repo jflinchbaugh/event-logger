@@ -41,7 +41,7 @@
    (t/truncate :seconds)
    format-date-time))
 
-(defn get-event-time
+(defn- get-event-time
   "read date-time of events"
   [event]
   (normalize-date-str (:date-time event)))
@@ -83,7 +83,7 @@
 
 ;; storage utilities
 
-(defn storage->edn
+(defn- storage->edn
   [k]
   (let [v (-> k ls/get-item edn/read-string)]
     (if (= "null" v) nil v)))
