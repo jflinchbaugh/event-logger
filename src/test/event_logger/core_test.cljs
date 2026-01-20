@@ -49,10 +49,15 @@
            (sut/normalize-date-str "2024-01-01T01:01"))))
 
 (t/deftest test-normalize-event
-  (t/is (= {:date-time "2024-01-01T01:01:01" :note nil}
-           (sut/normalize-event {:date-time "2024-01-01T01:01:01"})))
-  (t/is (= {:date-time "2024-01-01T01:01:01" :note "foo"}
-           (sut/normalize-event {:date-time "2024-01-01T01:01:01" :note "foo"}))))
+  (t/is (= {:date-time "2024-01-01T01:01:01"
+            :note nil}
+           (sut/normalize-event
+             {:date-time "2024-01-01T01:01:01"})))
+  (t/is (= {:date-time "2024-01-01T01:01:01"
+            :note "foo"}
+           (sut/normalize-event
+             {:date-time "2024-01-01T01:01:01"
+              :note "foo"}))))
 
 (t/deftest test-describe-diff
   (t/are [expected value unit]
