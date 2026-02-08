@@ -10,13 +10,13 @@
             [cljs-http.client :as http]
             [clojure.edn :as edn]
             [cljs.core.async :refer [<! go]]
-            [goog.string :refer [format]])
-  (:import [goog.events KeyCodes])
-  (:require-macros [event-logger.build-info :as build-info]))
+            [goog.string :refer [format]]
+            [event-logger.version :as version])
+  (:import [goog.events KeyCodes]))
 
 (def response-display-ms 3000)
 
-(def build-date (build-info/build-date))
+(def build-date version/build-date)
 
 ;; date utilities
 (defn- format-date-time [dt]

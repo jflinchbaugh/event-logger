@@ -20,7 +20,10 @@
   :frontend
   {:target :browser
    :asset-path "."
-   :modules {:main {:init-fn event-logger.app/init}}}
+   :modules {:main {:init-fn event-logger.app/init}}
+   :build-hooks
+   [[event-logger.build-hooks/version-cljs]
+    [event-logger.build-hooks/version-index-resources]]}
 
   :test
   {:target :node-test

@@ -1,5 +1,7 @@
 node_modules/
 public/js
+public/index.html
+version.cljs
 
 /target
 /checkouts
