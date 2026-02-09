@@ -186,7 +186,7 @@
       (if (:success response)
         (if (:categories edn-response)
           (do
-            (dispatch [:assoc :categories (:categories edn-response)])
+            (dispatch [:set-categories (:categories edn-response)])
             (dispatch [:set-network-response response]))
           (dispatch
            [:set-network-response
@@ -328,9 +328,12 @@
             (reducer [:log-category-change
                       {:change-type :add-category
                        :category-data {:id new-cat-id :name new-cat-name}}])
-            (assoc :new-category ""))
+            (reducer [:clear-new-category]))
         (if (existing-categories new-cat-id)
-          (reducer state [:toggle-category new-cat-id])
+          (->
+            state
+           (reducer [:toggle-category new-cat-id])
+           (reducer [:clear-new-category]))
           state)))
 
     :delete-category
@@ -427,7 +430,9 @@
     :update-new-config
     (assoc-in state (cons :new-config (first data)) (second data))
 
+    :set-categories (assoc state :categories data)
     :set-new-category (assoc state :new-category data)
+    :clear-new-category (reducer state [:set-new-category ""])
     :set-adding-event (assoc state :adding-event data)
     :set-adding-note (assoc state :adding-note data)
     :set-editing-time (assoc-in state [:editing-event :time] data)
@@ -435,8 +440,6 @@
     :set-confirm (assoc-in state [:confirm (first data)] (second data))
     :clear-confirms (dissoc state :confirm)
     :clear-log (assoc state :categories-log [])
-    :assoc (assoc state (first data) (second data))
-    :dissoc (apply dissoc state data)
 
     state))
 
