@@ -11,20 +11,12 @@
             [cljs.core.async :refer [go]]
             [cljs.core.async.interop :refer-macros [<p!]]))
 
-(defn setup-root [f]
-  (f)
-  (tlr/cleanup))
-
-(defn local-storage-fixture [f]
-  (ls/remove-item! :config)
-  (ls/remove-item! :categories)
-  (ls/remove-item! :categories-log)
-  (f)
+(defn cleanup-local-storage []
   (ls/remove-item! :config)
   (ls/remove-item! :categories)
   (ls/remove-item! :categories-log))
 
-(t/use-fixtures :each setup-root local-storage-fixture)
+(t/use-fixtures :each {:after tlr/cleanup} {:after cleanup-local-storage})
 
 (t/deftest test-now-str
   (t/testing "now-str shows date/time to the second"
@@ -214,7 +206,7 @@
         container (.-container render-result)
         add-btn (tlr/getByText container "Add")
         debug-btn (tlr/getByText container "Debug")
-        category-input #(tlr/getByPlaceholderText container "New Category")]
+        category-input (.querySelector container ".new-category")]
 
     (t/testing "app has a debug button and no info initially"
       (t/is debug-btn)
@@ -234,7 +226,7 @@
     (t/testing "there are basic components and no categories"
       (t/is add-btn)
       (t/is debug-btn)
-      (t/is (category-input))
+      (t/is category-input)
       (t/is
        (not (tlr/queryByText container "+"))
        "no categories shown"))
@@ -242,18 +234,20 @@
     (t/testing "add a category"
       (t/is (= 0 (count (tlr/queryAllByText container "+")))
             "there are no categories, those no add buttons")
-      (t/is (= ":new-category" (.-name (category-input))))
-      (t/is (= "" (.-value (category-input))))
+      (t/is (= ":new-category" (.-name category-input)))
+      (t/is (= "" (.-value category-input)))
 
       (tlr/fireEvent.change
-       (category-input)
+       category-input
        #js {:target #js {:value "My New Category"}})
-      (t/is (= "My New Category" (.-value (category-input))))
+      (t/is (= "My New Category" (.-value category-input)))
 
       (t/is add-btn)
       (tlr/fireEvent.click add-btn)
 
-      (t/is (= "" (.-value (category-input))) "category input is cleared")
+      (t/is (= "" (.-value category-input)) "category input is cleared")
+
+      (prn (.-innerHTML container))
 
       (t/is
        (= "category"

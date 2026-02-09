@@ -1,8 +1,8 @@
 (ns node
-  (:require ["global-jsdom" :as global-jsdom]
-            [cljs.test :as test]))
+  (:require [init]
+            [cljs.test :as test]
+            [event-logger.core-test]
+            [event-logger.localstorage-test]))
 
 (defn main []
-  (global-jsdom)
   (test/run-all-tests #".*-test$"))
-
