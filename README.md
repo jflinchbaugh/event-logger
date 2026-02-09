@@ -25,3 +25,8 @@ and launch the browser view of the app.
 
 ## Browser Tests and Frontend at the Same Time
 - `npx shadow-cljs watch test-browser frontend`
+
+## Run the Tests in Node
+```
+npx shadow-cljs compile test
+```
