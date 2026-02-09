@@ -7,6 +7,8 @@
 
 ;; Mock localStorage if it's not provided by the environment
 (when (cljs.core/undefined? js/localStorage)
-  (set! js/localStorage #js {:getItem (fn [_] nil)
-                             :setItem (fn [_ _] nil)
-                             :removeItem (fn [_] nil)}))
+  (let [storage (atom {})]
+    (set! js/localStorage
+          #js {:getItem (fn [k] (get @storage k))
+               :setItem (fn [k v] (swap! storage assoc k v))
+               :removeItem (fn [k] (swap! storage dissoc k))})))
