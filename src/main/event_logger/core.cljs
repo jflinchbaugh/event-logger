@@ -168,6 +168,7 @@
               (dispatch [:set-network-response response]))))))))
 
 (defn download!
+  ;; TODO move into reducer?
   [config dispatch]
   (dispatch [:set-network-action "Download"])
   (go
@@ -437,7 +438,8 @@
     :set-adding-note (assoc state :adding-note data)
     :set-editing-time (assoc-in state [:editing-event :time] data)
     :set-editing-note (assoc-in state [:editing-event :note] data)
-    :set-confirm (assoc-in state [:confirm (first data)] (second data))
+    :confirm-delete-category (assoc-in state
+                                   [:confirm :delete-category] data)
     :clear-confirms (dissoc state :confirm)
     :clear-log (assoc state :categories-log [])
 
@@ -520,7 +522,7 @@
       "Really?")
      (d/button
       {:class "delete"
-       :on-click (fn [] (dispatch [:set-confirm [:delete-category item-id]]))}
+       :on-click (fn [] (dispatch [:confirm-delete-category item-id]))}
       "X"))))
 
 (defnc event-details
