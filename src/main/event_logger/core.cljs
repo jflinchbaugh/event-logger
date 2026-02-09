@@ -332,7 +332,7 @@
             (reducer [:clear-new-category]))
         (if (existing-categories new-cat-id)
           (->
-            state
+           state
            (reducer [:toggle-category new-cat-id])
            (reducer [:clear-new-category]))
           state)))
@@ -388,21 +388,21 @@
 
     :delete-event
     (-> state
-      (reducer [:log-category-change
-                {:change-type :delete-event
-                 :category-data {:category-id (:id (get-confirm state :delete-event))
-                                 :event data}}])
-      (reducer [:clear-confirms]))
+        (reducer [:log-category-change
+                  {:change-type :delete-event
+                   :category-data {:category-id (:id (get-confirm state :delete-event))
+                                   :event data}}])
+        (reducer [:clear-confirms]))
 
     :start-edit-event
     (let [{:keys [category-id event]} data]
       (-> state
-        (assoc :editing-event {:category-id category-id
-                               :original-event event
-                               :time (:date-time event)
-                               :note (:note event)})
-        (reducer [:clear-confirms])
-        (reducer [:cancel-add-event])))
+          (assoc :editing-event {:category-id category-id
+                                 :original-event event
+                                 :time (:date-time event)
+                                 :note (:note event)})
+          (reducer [:clear-confirms])
+          (reducer [:cancel-add-event])))
 
     :save-edit-event
     (let [{:keys [category-id original-event time note]} (:editing-event state)
@@ -439,7 +439,7 @@
     :set-editing-time (assoc-in state [:editing-event :time] data)
     :set-editing-note (assoc-in state [:editing-event :note] data)
     :confirm-delete-category (assoc-in state
-                                   [:confirm :delete-category] data)
+                                       [:confirm :delete-category] data)
     :clear-confirms (dissoc state :confirm)
     :clear-log (assoc state :categories-log [])
 
@@ -543,7 +543,7 @@
           :type "datetime-local"
           :step "1"
           :value (get-in state [:editing-event :time])
-          :on-change #(dispatch
+          :on-input #(dispatch
                        [:set-editing-time
                         (.. % -target -value)])
           :on-key-down (partial handle-edit-keydown dispatch)})
@@ -551,7 +551,7 @@
          {:class "new-event-note"
           :type "text"
           :value (get-in state [:editing-event :note])
-          :on-change #(dispatch
+          :on-input #(dispatch
                        [:set-editing-note
                         (.. % -target -value)])
           :on-key-down (partial handle-edit-keydown dispatch)})
@@ -608,7 +608,7 @@
           :enterKeyHint "done"
           :value (:adding-event state)
           :name :new-event
-          :on-change #(dispatch
+          :on-input #(dispatch
                        [:set-adding-event
                         (.. % -target -value)])
           :on-key-down (partial handle-add-keydown dispatch (:id item))})
@@ -617,7 +617,7 @@
           :type "text"
           :placeholder "Note"
           :value (:adding-note state)
-          :on-change #(dispatch
+          :on-input #(dispatch
                        [:set-adding-note
                         (.. % -target -value)])
           :on-key-down (partial handle-add-keydown dispatch (:id item))})
@@ -814,7 +814,7 @@
                            (d/input
                             {:name :resource
                              :id :resource
-                             :on-change (fn [e]
+                             :on-input (fn [e]
                                           (dispatch
                                            [:update-new-config
                                             [[:resource]
@@ -825,7 +825,7 @@
                            (d/input
                             {:name :user
                              :id :user
-                             :on-change (fn [e]
+                             :on-input (fn [e]
                                           (dispatch
                                            [:update-new-config
                                             [[:user]
@@ -837,7 +837,7 @@
                             {:name :password
                              :id :password
                              :type "password"
-                             :on-change (fn [e]
+                             :on-input (fn [e]
                                           (dispatch
                                            [:update-new-config
                                             [[:password]
@@ -862,8 +862,8 @@
      :enterKeyHint "done"
      :placeholder "New Category"
      :value (:new-category state)
-     :on-change (fn [e]
-                  (dispatch [:set-new-category (.. e -target -value)]))
+     :on-input (fn [e]
+                 (dispatch [:set-new-category (.. e -target -value)]))
      :on-key-down (partial handle-add-category-keydown dispatch)})
    (d/div
     {:class "edit-actions"}

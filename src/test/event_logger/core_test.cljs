@@ -211,7 +211,7 @@
       (t/is (= "" (.-value category-input)))
       (t/is (= "" (.. container (querySelector ".category-debug") -textContent)))
 
-      (tlr/fireEvent.change
+      (tlr/fireEvent.input
         category-input
         #js {:target #js {:value "My New Category"}})
       (t/is (= "My New Category" (.-value category-input)))
