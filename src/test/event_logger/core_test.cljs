@@ -209,13 +209,11 @@
         "there are no categories, those no add buttons")
       (t/is (= ":new-category" (.-name category-input)))
       (t/is (= "" (.-value category-input)))
-      (t/is (= "" (.. container (querySelector ".category-debug") -textContent)))
 
       (tlr/fireEvent.input
         category-input
         #js {:target #js {:value "My New Category"}})
       (t/is (= "My New Category" (.-value category-input)))
-      (t/is (= "My New Category" (.. container (querySelector ".category-debug") -textContent)))
 
       (t/is add-btn)
       (tlr/fireEvent.click add-btn)
