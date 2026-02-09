@@ -102,7 +102,7 @@
 
   (t/testing "write->read with migration"
     (sut/write-local-storage!
-      "1"
+      "2"
       {:user "user"}
       [{:cat "time" :events ["2024-01-01T01:01:01"]}]
       [{:cat :log}])
@@ -115,7 +115,7 @@
             (sut/read-local-storage))))
   (t/testing "write->read"
     (sut/write-local-storage!
-     "1"
+     "2"
      {:user "user"}
      [{:cat "time" :events [{:date-time "2024-01-01T01:01:01" :note "my-note"}]}]
      [{:cat :log}])
@@ -128,18 +128,6 @@
              (sut/read-local-storage)))))
 
 (t/deftest test-confirms
-  (t/testing "clear"
-    (let [state {:confirm {:whatever 1}}
-          set-state (fn [f & c] (apply f (cons state c)))]
-      (t/is (= {} (sut/clear-confirms! set-state)))))
-
-  (t/testing "set"
-    (let [state {:confirm {:whatever 1}}
-          set-state (fn [f & c] (apply f (cons state c)))]
-      (t/is (=
-             {:confirm {:whatever 1 :another 2}}
-             (sut/set-confirm! set-state :another 2)))))
-
   (t/testing "get"
     (let [state {:confirm {:whatever 1}}]
       (t/is (= 1 (sut/get-confirm state :whatever))))))
@@ -179,21 +167,6 @@
       (tlr/fireEvent.click debug-button)
       ;; Assert that the debug wrapper is no longer visible
       (t/is (nil? (tlr/queryByText container "Reload"))))))
-
-(t/deftest test-move-category
-  (t/testing "move"
-    (t/is (= {:categories ["a" "b" "c"]}
-             (sut/move-category {:categories ["a" "b" "c"]} 0 0)))
-    (t/is (= {:categories ["b" "a" "c"]}
-             (sut/move-category {:categories ["a" "b" "c"]} 0 1)))
-    (t/is (= {:categories ["b" "c" "a"]}
-             (sut/move-category {:categories ["a" "b" "c"]} 0 2)))
-    (t/is (= {:categories ["c" "a" "b"]}
-             (sut/move-category {:categories ["a" "b" "c"]} 2 0)))
-    (t/is (= {:categories ["a" "c" "b"]}
-             (sut/move-category {:categories ["a" "b" "c"]} 2 1)))
-    (t/is (= {:categories ["a" "b" "c"]}
-             (sut/move-category {:categories ["a" "b" "c"]} 2 2)))))
 
 (t/deftest test-title-bar
   (t/testing "title-bar renders the correct title"
@@ -246,8 +219,6 @@
       (tlr/fireEvent.click add-btn)
 
       (t/is (= "" (.-value category-input)) "category input is cleared")
-
-      (prn (.-innerHTML container))
 
       (t/is
        (= "category"

@@ -119,12 +119,6 @@
   (ls/set-item! :categories categories)
   (ls/set-item! :categories-log categories-log))
 
-(defn log-category-change! [set-state change-type category-data]
-  (set-state update :categories-log
-             conj {:timestamp (now-str-ms)
-                   :type change-type
-                   :data category-data}))
-
 (defn configured?
   "is the app configured and able to upload/download data?"
   [resource user password]
@@ -143,12 +137,12 @@
 ;; http actions
 
 (defn upload!
-  [force state set-state]
+  [force state dispatch]
   (when-not (:network-response state)
     (let [config (:config state)
           {:keys [resource user password]} config]
       (when (or force (configured? resource user password))
-        (set-state assoc :network-action "Upload")
+        (dispatch [:set-network-action "Upload"])
         (go
           (let [response (->
                           resource
@@ -165,24 +159,17 @@
                 edn-response (-> response
                                  :body
                                  edn/read-string)]
-            (set-state
-             assoc
-             :network-response
-             response)
-            (when
-             (and (:success response) (not (:categories edn-response)))
-              (set-state
-               (fn [m]
-                 (assoc-in
-                  (assoc-in
-                   m
-                   [:network-response :success] false)
-                  [:network-response :error-text]
-                  "Failed to upload! Check resource config."))))))))))
+            (if (and (:success response) (not (:categories edn-response)))
+              (dispatch
+               [:set-network-response
+                (assoc response
+                       :success false
+                       :error-text "Failed to upload! Check resource config.")])
+              (dispatch [:set-network-response response]))))))))
 
 (defn download!
-  [config set-state]
-  (set-state assoc :network-action "Download")
+  [config dispatch]
+  (dispatch [:set-network-action "Download"])
   (go
     (let [{:keys [resource user password]} config
           response
@@ -196,31 +183,19 @@
           edn-response (-> response
                            :body
                            edn/read-string)]
-      (set-state assoc :network-response response)
-      (when (:success response)
+      (if (:success response)
         (if (:categories edn-response)
-          (set-state
-           assoc
-           :categories (:categories edn-response))
-          (set-state
-           (fn [m]
-             (assoc-in
-              (assoc-in m
-                        [:network-response :success] false)
-              [:network-response :error-text]
-              "Failed to download! Check resource config."))))))))
+          (do
+            (dispatch [:assoc :categories (:categories edn-response)])
+            (dispatch [:set-network-response response]))
+          (dispatch
+           [:set-network-response
+            (assoc response
+                   :success false
+                   :error-text "Failed to download! Check resource config.")]))
+        (dispatch [:set-network-response response])))))
 
 ;; confirmations utils
-
-(defn clear-confirms!
-  "clear all confirmations as you nav through the app"
-  [set-state]
-  (set-state dissoc :confirm))
-
-(defn set-confirm!
-  "set a confirmation state"
-  [set-state name data]
-  (set-state assoc-in [:confirm name] data))
 
 (defn get-confirm
   "get a confirmation state"
@@ -262,38 +237,6 @@
 
 ;; category actions
 
-(defn open-category! [state set-state item-id]
-  (clear-confirms! set-state)
-  (set-state
-   (fn [s]
-     (let [s (dissoc s :adding-event :adding-note :editing-event)]
-       (if (= item-id (:display-category s))
-         (dissoc s :display-category)
-         (assoc s :display-category item-id))))))
-
-(defn add-category! [state set-state]
-  (let [new-cat-name (str/replace
-                      (->> state :new-category str/trim)
-                      #" +" " ")
-        new-cat-id (str/replace
-                    (str/lower-case new-cat-name)
-                    #" " "-")
-        existing-categories (set (map :id (:categories state)))]
-    (when (not (str/blank? new-cat-name))
-      (if (existing-categories new-cat-id)
-        (open-category! state set-state new-cat-id)
-        (log-category-change!
-         set-state
-         :add-category
-         {:id new-cat-id :name new-cat-name})))))
-
-(defn delete-category! [state set-state item-id]
-  (log-category-change!
-   set-state
-   :delete-category
-   {:id item-id})
-  (open-category! state set-state nil))
-
 (defn remove-at-index [lst index]
   (concat (take index lst) (drop (inc index) lst)))
 
@@ -307,9 +250,6 @@
      (remove-at-index from)
      (insert-at-index to item)
      vec)))
-
-(defn move-category [state from to]
-  (update-in state [:categories] move from to))
 
 (defn apply-log-entry [categories {:keys [type data]}]
   (case type
@@ -347,94 +287,163 @@
 
     categories))
 
-;; event actions
+(defn- toggle-category [state item-id]
+  (if (= item-id (:display-category state))
+    (dissoc state :display-category)
+    (assoc state :display-category item-id)))
 
-(defn add-event! [state set-state id]
-  (clear-confirms! set-state)
-  (if (adding-event? state)
-    (let [time (normalize-date-str (:adding-event state))
-          note (str/trim (or (:adding-note state) ""))
-          idx (.indexOf (map :id (:categories state)) id)
-          event {:note note :date-time time}
-          existing-events (get-in state [:categories idx :events])]
-      (when (is-new-event? existing-events event)
-        (log-category-change!
-         set-state
-         :add-event
-         {:category-id id :event event})
-        (set-state
-         (fn [s]
-           (-> s
-               (dissoc :adding-event :adding-note :editing-event))))))
-    (do
-      (when (not= (:display-category state) id)
-        (open-category! state set-state id))
-      (set-state
-       (fn [s]
-         (-> s
-             (assoc :adding-event (now-str) :adding-note "")
-             (dissoc :editing-event)))))))
+(defn reducer [state [type data]]
+  (tel/log! :info {:type type :data data})
+  (case type
+    :log-category-change
+    (let [{:keys [change-type category-data]} data
+          new-log-entry {:timestamp (now-str-ms)
+                         :type change-type
+                         :data category-data}
+          new-log (conj (:categories-log state) new-log-entry)
+          new-categories (apply-log-entry (:categories state) new-log-entry)]
+      (assoc state
+             :categories-log new-log
+             :categories new-categories))
 
-(defn open-delete-event! [state set-state id event]
-  (let [new-confirmation {:id id :event (:date-time event)}]
-    (set-state
-     (fn [s]
-       (-> s
-           (assoc-in [:confirm :delete-event]
-                     (when
-                      (not= new-confirmation (get-confirm s :delete-event))
-                       new-confirmation))
-           (dissoc :adding-event :adding-note :editing-event))))))
+    :toggle-category
+    (let [item-id data]
+      (-> state
+          (reducer [:clear-confirms])
+          (reducer [:cancel-edit])
+          (reducer [:cancel-add-event])
+          (toggle-category item-id)))
 
-(defn delete-event! [state set-state event]
-  (log-category-change!
-   set-state
-   :delete-event
-   {:category-id (:id (get-confirm state :delete-event))
-    :event event})
-  (clear-confirms! set-state))
+    :add-category
+    (let [new-cat-name (str/replace
+                        (->> state :new-category str/trim)
+                        #" +" " ")
+          new-cat-id (str/replace
+                      (str/lower-case new-cat-name)
+                      #" " "-")
+          existing-categories (set (map :id (:categories state)))]
+      (if (and (not (str/blank? new-cat-name))
+               (not (existing-categories new-cat-id)))
+        (-> state
+            (reducer [:log-category-change
+                      {:change-type :add-category
+                       :category-data {:id new-cat-id :name new-cat-name}}])
+            (assoc :new-category ""))
+        (if (existing-categories new-cat-id)
+          (reducer state [:toggle-category new-cat-id])
+          state)))
 
-(defn save-config!
-  [state set-state]
-  (set-state
-   assoc
-   :config
-   (select-keys
-    (:new-config state)
-    [:resource :user :password])))
+    :delete-category
+    (-> state
+        (reducer [:log-category-change
+                  {:change-type :delete-category
+                   :category-data {:id data}}])
+        (reducer [:toggle-category nil]))
+
+    :move-category
+    (let [{:keys [from-index to-index category-id]} data]
+      (reducer state [:log-category-change
+                      {:change-type :move-category
+                       :category-data {:from-index from-index
+                                       :to-index to-index
+                                       :category-id category-id}}]))
+
+    :add-event
+    (let [id data]
+      (if (adding-event? state)
+        (let [time (normalize-date-str (:adding-event state))
+              note (str/trim (or (:adding-note state) ""))
+              idx (some (fn [[i c]] (when (= (:id c) id) i))
+                        (map-indexed vector (:categories state)))
+              event {:note note :date-time time}
+              existing-events (when idx (get-in state [:categories idx :events]))]
+          (if (and idx (is-new-event? existing-events event))
+            (-> state
+                (reducer [:log-category-change
+                          {:change-type :add-event
+                           :category-data {:category-id id :event event}}])
+                (reducer [:cancel-edit])
+                (reducer [:cancel-add-event])
+                (reducer [:clear-confirms]))
+            state))
+        (-> state
+            (assoc :display-category id)
+            (assoc :adding-event (now-str) :adding-note "")
+            (reducer [:cancel-edit]))))
+
+    :confirm-delete-event
+    (let [{:keys [id event]} data
+          new-confirmation {:id id :event (:date-time event)}]
+      (-> state
+          (assoc-in [:confirm :delete-event]
+                    (when
+                     (not= new-confirmation (get-confirm state :delete-event))
+                      new-confirmation))
+          (reducer [:cancel-edit])
+          (reducer [:cancel-add-event])))
+
+    :delete-event
+    (-> state
+      (reducer [:log-category-change
+                {:change-type :delete-event
+                 :category-data {:category-id (:id (get-confirm state :delete-event))
+                                 :event data}}])
+      (reducer [:clear-confirms]))
+
+    :start-edit-event
+    (let [{:keys [category-id event]} data]
+      (-> state
+        (assoc :editing-event {:category-id category-id
+                               :original-event event
+                               :time (:date-time event)
+                               :note (:note event)})
+        (reducer [:clear-confirms])
+        (reducer [:cancel-add-event])))
+
+    :save-edit-event
+    (let [{:keys [category-id original-event time note]} (:editing-event state)
+          note (str/trim (or note ""))
+          new-event {:date-time (normalize-date-str time) :note note}]
+      (-> state
+          (reducer [:log-category-change
+                    {:change-type :delete-event
+                     :category-data {:category-id category-id :event original-event}}])
+          (reducer [:log-category-change
+                    {:change-type :add-event
+                     :category-data {:category-id category-id :event new-event}}])
+
+          (reducer [:cancel-edit])))
+
+    :cancel-edit (dissoc state :editing-event)
+    :cancel-add-event (dissoc state :adding-event :adding-note)
+
+    :set-network-action (assoc state :network-action data)
+    :set-network-response (assoc state :network-response data)
+    :clear-network-status (assoc state :network-response nil :network-action nil)
+
+    :save-config
+    (assoc state :config (select-keys (:new-config state) [:resource :user :password]))
+
+    :update-new-config
+    (assoc-in state (cons :new-config (first data)) (second data))
+
+    :set-new-category (assoc state :new-category data)
+    :set-adding-event (assoc state :adding-event data)
+    :set-adding-note (assoc state :adding-note data)
+    :set-editing-time (assoc-in state [:editing-event :time] data)
+    :set-editing-note (assoc-in state [:editing-event :note] data)
+    :set-confirm (assoc-in state [:confirm (first data)] (second data))
+    :clear-confirms (dissoc state :confirm)
+    :clear-log (assoc state :categories-log [])
+    :assoc (assoc state (first data) (second data))
+    :dissoc (apply dissoc state data)
+
+    state))
 
 (defn editing-event? [state category-id event]
   (let [editing (:editing-event state)]
     (and (= (:category-id editing) category-id)
          (= (:original-event editing) event))))
-
-(defn start-editing-event! [state set-state category-id event]
-  (set-state
-   (fn [s]
-     (-> s
-         (assoc :editing-event {:category-id category-id
-                                :original-event event
-                                :time (:date-time event)
-                                :note (:note event)})
-         (dissoc :adding-event :adding-note :confirm)))))
-
-(defn cancel-edit! [set-state]
-  (set-state dissoc :editing-event))
-
-(defn cancel-add-event! [set-state]
-  (set-state dissoc :adding-event :adding-note))
-
-(defn save-edited-event! [state set-state]
-  (let [{:keys [category-id original-event time note]} (:editing-event state)
-        note (str/trim (or note ""))
-        new-event {:date-time (normalize-date-str time) :note note}]
-    (log-category-change!
-     set-state :delete-event
-     {:category-id category-id :event original-event})
-    (log-category-change!
-     set-state :add-event
-     {:category-id category-id :event new-event})
-    (set-state dissoc :editing-event)))
 
 (defn enter-key? [e]
   (== KeyCodes/ENTER (.-which e)))
@@ -447,23 +456,22 @@
     (enter-key? e) (on-enter)
     (esc-key? e) (on-esc)))
 
-(defn handle-edit-keydown [state set-state e]
+(defn handle-edit-keydown [dispatch e]
   (handle-keydown
-   #(save-edited-event! state set-state)
-   #(cancel-edit! set-state)
+   #(dispatch [:save-edit-event])
+   #(dispatch [:cancel-edit])
    e))
 
-(defn handle-add-keydown [state set-state item-id e]
+(defn handle-add-keydown [dispatch item-id e]
   (handle-keydown
-   #(add-event! state set-state item-id)
-   #(cancel-add-event! set-state)
+   #(dispatch [:add-event item-id])
+   #(dispatch [:cancel-add-event])
    e))
 
-(defn handle-add-category-keydown [state set-state e]
+(defn handle-add-category-keydown [dispatch e]
   (handle-keydown
-   #(do (add-category! state set-state)
-        (set-state assoc :new-category ""))
-   #(set-state assoc :new-category "")
+   #(dispatch [:add-category])
+   #(dispatch [:set-new-category ""])
    e))
 
 ;; define components using the `defnc` macro
@@ -481,7 +489,8 @@
   (let [sorted-events (->> category :events (sort-by :date-time))
         last-event (last sorted-events)
         [now set-now] (hooks/use-state (t/date-time))]
-    (js/setTimeout (partial set-now (t/date-time)) 1000)
+    (hooks/use-effect [now]
+                      (js/setTimeout (partial set-now (t/date-time)) 1000))
     (when last-event
       (d/div
        {:class "time-since"}
@@ -493,22 +502,22 @@
         describe-diff
         (->> (format "(%s ago)")))))))
 
-(defnc add-button [{:keys [state set-state item display]}]
+(defnc add-button [{:keys [dispatch item display]}]
   (d/button
-   {:on-click (partial add-event! state set-state (:id item))}
+   {:on-click (fn [] (dispatch [:add-event (:id item)]))}
    display))
 
-(defnc category-controls [{:keys [set-state state item-id]}]
+(defnc category-controls [{:keys [dispatch state item-id]}]
   (d/div
    {:class "controls"}
    (if (= (get-confirm state :delete-category) item-id)
      (d/button
       {:class "delete"
-       :on-click (partial delete-category! state set-state item-id)}
+       :on-click (fn [] (dispatch [:delete-category item-id]))}
       "Really?")
      (d/button
       {:class "delete"
-       :on-click (partial set-confirm! set-state :delete-category item-id)}
+       :on-click (fn [] (dispatch [:set-confirm [:delete-category item-id]]))}
       "X"))))
 
 (defnc event-details
@@ -517,7 +526,7 @@
            expand-action
            delete-action
            state
-           set-state
+           dispatch
            category-id]}]
   (let [editing? (editing-event? state category-id event)]
     (if editing?
@@ -529,29 +538,27 @@
           :type "datetime-local"
           :step "1"
           :value (get-in state [:editing-event :time])
-          :on-change #(set-state
-                       assoc-in
-                       [:editing-event :time]
-                       (.. % -target -value))
-          :on-key-down (partial handle-edit-keydown state set-state)})
+          :on-change #(dispatch
+                       [:set-editing-time
+                        (.. % -target -value)])
+          :on-key-down (partial handle-edit-keydown dispatch)})
         (d/input
          {:class "new-event-note"
           :type "text"
           :value (get-in state [:editing-event :note])
-          :on-change #(set-state
-                       assoc-in
-                       [:editing-event :note]
-                       (.. % -target -value))
-          :on-key-down (partial handle-edit-keydown state set-state)})
+          :on-change #(dispatch
+                       [:set-editing-note
+                        (.. % -target -value)])
+          :on-key-down (partial handle-edit-keydown dispatch)})
         (d/div
          {:class "edit-actions"}
          (d/button
           {:class "save"
-           :on-click #(save-edited-event! state set-state)}
+           :on-click #(dispatch [:save-edit-event])}
           "Save")
          (d/button
           {:class "cancel"
-           :on-click #(cancel-edit! set-state)}
+           :on-click #(dispatch [:cancel-edit])}
           "Cancel"))))
       (d/li
        {:class "event"
@@ -571,18 +578,16 @@
             {:class "edit"
              :on-click (fn [e]
                          (.stopPropagation e)
-                         (start-editing-event!
-                          state
-                          set-state
-                          category-id
-                          event))}
+                         (dispatch [:start-edit-event
+                                    {:category-id category-id
+                                     :event event}]))}
             "Edit"))))
        (when (not (str/blank? (:note event)))
          (d/div {:class "note"} (:note event)))
        (when (:duration event)
          (d/div {:class "duration"} (str "(" (:duration event) ")")))))))
 
-(defnc category-details [{:keys [set-state state item]}]
+(defnc category-details [{:keys [dispatch state item]}]
   (let [adding? (:adding-event state)]
     (d/div
      {:class "details" :id (str "details-" (:id item))}
@@ -598,31 +603,28 @@
           :enterKeyHint "done"
           :value (:adding-event state)
           :name :new-event
-          :on-change #(set-state
-                       assoc
-                       :adding-event
-                       (.. % -target -value))
-          :on-key-down (partial handle-add-keydown state set-state (:id item))})
+          :on-change #(dispatch
+                       [:set-adding-event
+                        (.. % -target -value)])
+          :on-key-down (partial handle-add-keydown dispatch (:id item))})
         (d/input
          {:class "new-event-note"
           :type "text"
           :placeholder "Note"
           :value (:adding-note state)
-          :on-change #(set-state
-                       assoc
-                       :adding-note
-                       (.. % -target -value))
-          :on-key-down (partial handle-add-keydown state set-state (:id item))})
+          :on-change #(dispatch
+                       [:set-adding-note
+                        (.. % -target -value)])
+          :on-key-down (partial handle-add-keydown dispatch (:id item))})
         (d/div
          {:class "edit-actions"}
          ($ add-button
-            {:state state
-             :set-state set-state
+            {:dispatch dispatch
              :item item
              :display "Save"})
          (d/button
           {:class "cancel"
-           :on-click #(cancel-add-event! set-state)}
+           :on-click #(dispatch [:cancel-add-event])}
           "Cancel"))))
      (d/ul
       {:class "events"}
@@ -637,26 +639,22 @@
               {:key (str (:id item) "-" (:date-time event))
                :event event
                :state state
-               :set-state set-state
+               :dispatch dispatch
                :category-id (:id item)
                :expanded-fn? (partial
                               event-expanded?
                               state
                               item)
-               :expand-action (partial
-                               open-delete-event!
-                               state
-                               set-state
-                               (:id item))
-               :delete-action (partial
-                               delete-event!
-                               state
-                               set-state
-                               event)}))))
+               :expand-action (fn [e]
+                                (dispatch [:confirm-delete-event
+                                           {:id (:id item)
+                                            :event e}]))
+               :delete-action (fn [e]
+                                (dispatch [:delete-event e]))}))))
       ($ category-controls
-         {:state state :set-state set-state :item-id (:id item)})))))
+         {:state state :dispatch dispatch :item-id (:id item)})))))
 
-(defnc categories [{:keys [state set-state]}]
+(defnc categories [{:keys [state dispatch]}]
   (let [categories (:categories state)
         [drag-state set-drag-state] (hooks/use-state nil)
 
@@ -692,13 +690,12 @@
                                      (not=
                                       (:from drag-state)
                                       (:to drag-state)))
-                            (log-category-change!
-                             set-state
-                             :move-category
-                             {:from-index (:from drag-state)
-                              :to-index (:to drag-state)
-                              :category-id (get-in categories
-                                                   [(:from drag-state) :id])}))
+                            (dispatch
+                             [:move-category
+                              {:from-index (:from drag-state)
+                               :to-index (:to drag-state)
+                               :category-id (get-in categories
+                                                    [(:from drag-state) :id])}]))
                           (set-drag-state nil))]
 
     (d/ul
@@ -713,19 +710,18 @@
           :on-drag-end handle-drag-end
           :on-drag-over (fn [e] (.. e preventDefault))}
          ($ add-button
-            {:state state
-             :set-state set-state
+            {:dispatch dispatch
              :item item
              :display "+"})
          (d/span
           {:class "category"
-           :on-click (partial open-category! state set-state (:id item))}
+           :on-click (fn [] (dispatch [:toggle-category (:id item)]))}
           (:name item))
          (when (= (:id item) (:display-category state))
            ($ category-details
-              {:set-state set-state :state state :item item}))))))))
+              {:dispatch dispatch :state state :item item}))))))))
 
-(defnc network-response-display [{:keys [state set-state]}]
+(defnc network-response-display [{:keys [state dispatch]}]
   (let [network-response (get state :network-response)
         network-action (get state :network-action)]
     (hooks/use-effect
@@ -733,8 +729,7 @@
      (when (and network-response network-action)
        (js/setTimeout
         (fn []
-          (set-state assoc :network-response nil)
-          (set-state assoc :network-action nil))
+          (dispatch [:clear-network-status]))
         response-display-ms)))
     (when (and network-response network-action)
       (d/div
@@ -745,7 +740,7 @@
                  (if (get-in state [:network-response :success])
                    "success"
                    "error"))
-         :on-click #(set-state assoc :network-response nil)}
+         :on-click #(dispatch [:set-network-response nil])}
         (if (get-in state [:network-response :success])
           (str (:network-action state) " succeeded!")
           (str
@@ -753,7 +748,7 @@
            " failed: "
            (get-in state [:network-response :error-text]))))))))
 
-(defnc debugger [{:keys [state set-state]}]
+(defnc debugger [{:keys [state dispatch]}]
   (let [[show? set-show] (hooks/use-state false)]
     (d/div
      {:id "debug"}
@@ -764,9 +759,9 @@
      (when show?
        (d/div
         {:class "wrapper"}
-         (d/div
-           {:class "row"}
-           (d/div "Build Date: " build-date))
+        (d/div
+         {:class "row"}
+         (d/div "Build Date: " build-date))
         (d/div
          {:class "row"}
          (d/button
@@ -777,24 +772,20 @@
          {:class "row"}
          (d/button
           {:class "upload"
-           :on-click (partial
-                      upload!
-                      true
-                      state
-                      set-state)}
+           :on-click (fn [] (upload! true state dispatch))}
           "Upload"))
         (d/div
          {:class "row"}
          (d/button
           {:class "download"
            :on-click (fn []
-                       (download! (:config state) set-state))}
+                       (download! (:config state) dispatch))}
           "Download"))
         (d/div
          {:class "row"}
          (d/button
           {:class "clear-log"
-           :on-click (fn [] (set-state assoc :categories-log []))}
+           :on-click (fn [] (dispatch [:clear-log]))}
           "Clear Log"))
         (d/pre
          (->>
@@ -804,7 +795,7 @@
           pp/pprint
           with-out-str)))))))
 
-(defnc config [{:keys [state set-state]}]
+(defnc config [{:keys [state dispatch]}]
   (let [[show? set-show] (hooks/use-state false)]
     (d/div {:id "config"}
            (d/button
@@ -819,10 +810,10 @@
                             {:name :resource
                              :id :resource
                              :on-change (fn [e]
-                                          (set-state
-                                           assoc-in
-                                           [:new-config :resource]
-                                           (.. e -target -value)))
+                                          (dispatch
+                                           [:update-new-config
+                                            [[:resource]
+                                             (.. e -target -value)]]))
                              :value (get-in state [:new-config :resource])}))
                     (d/div {:class "row"}
                            (d/label {:for :user} "User")
@@ -830,10 +821,10 @@
                             {:name :user
                              :id :user
                              :on-change (fn [e]
-                                          (set-state
-                                           assoc-in
-                                           [:new-config :user]
-                                           (.. e -target -value)))
+                                          (dispatch
+                                           [:update-new-config
+                                            [[:user]
+                                             (.. e -target -value)]]))
                              :value (get-in state [:new-config :user])}))
                     (d/div {:class "row"}
                            (d/label {:for :password} "Password")
@@ -842,19 +833,19 @@
                              :id :password
                              :type "password"
                              :on-change (fn [e]
-                                          (set-state
-                                           assoc-in
-                                           [:new-config :password]
-                                           (.. e -target -value)))
+                                          (dispatch
+                                           [:update-new-config
+                                            [[:password]
+                                             (.. e -target -value)]]))
                              :value (get-in state [:new-config :password])}))
                     (d/div {:class "row"}
                            (d/button
                             {:class "save"
                              :on-click (fn []
-                                         (save-config! state set-state))}
+                                         (dispatch [:save-config]))}
                             "Save Config")))))))
 
-(defnc add-category-form [{:keys [state set-state]}]
+(defnc add-category-form [{:keys [state dispatch]}]
   (d/div
    {:class "add"}
    (d/input
@@ -866,22 +857,19 @@
      :placeholder "New Category"
      :value (:new-category state)
      :on-change (fn [e]
-                  (set-state
-                   assoc
-                   :new-category (.. e -target -value)))
-     :on-key-down (partial handle-add-category-keydown state set-state)})
+                  (dispatch [:set-new-category (.. e -target -value)]))
+     :on-key-down (partial handle-add-category-keydown dispatch)})
    (d/div
     {:class "edit-actions"}
     (d/button
      {:class "add"
       :on-click (fn []
-                  (add-category! state set-state)
-                  (set-state assoc :new-category ""))}
+                  (dispatch [:add-category]))}
      "Add")
     (d/button
      {:class "cancel"
       :on-click (fn []
-                  (set-state assoc :new-category ""))}
+                  (dispatch [:set-new-category ""]))}
      "Cancel"))))
 
 (defnc title-bar []
@@ -890,35 +878,19 @@
 
 (defnc app []
   (let [local-data (read-local-storage)
-        [state set-state] (hooks/use-state
-                           (assoc
-                            local-data
-                            :new-category ""))
+        [state dispatch] (hooks/use-reducer
+                          reducer
+                          (assoc
+                           local-data
+                           :new-category ""))
         [last-upload set-last-upload] (hooks/use-state
                                        (select-keys
                                         local-data
-                                        [:categories :categories-log]))
-        processed-log-ref (hooks/use-ref (count (:categories-log local-data)))]
-
-    ;; watch categories-log and apply changes to persistent categories state
-    (hooks/use-effect
-     [(:categories-log state)]
-     (let [log (:categories-log state)
-           cnt (count log)
-           processed @processed-log-ref]
-       (when (> cnt processed)
-         (let [new-entries (subvec log processed)
-               current-categories (:categories state)
-               new-categories (reduce
-                                apply-log-entry
-                                current-categories
-                                new-entries)]
-           (set-state assoc :categories new-categories)))
-       (reset! processed-log-ref cnt)))
+                                        [:categories :categories-log]))]
 
     ;; update local storage
     (hooks/use-effect
-      [(:config state) (:categories state) (:categories-log state)]
+     [(:config state) (:categories state) (:categories-log state)]
      (write-local-storage!
       "2"
       (:config state)
@@ -927,23 +899,22 @@
 
     ;; upload changes
     (hooks/use-effect
-      [(:categories state)]
+     [(:categories state)]
      (when-not
       (= (select-keys state [:categories :categories-log])
          (select-keys last-upload [:categories :categories-log]))
-       (upload! false state set-state)
+       (upload! false state dispatch)
        (set-last-upload
-         merge
-         (select-keys state [:categories :categories-log]))
-       ))
+        merge
+        (select-keys state [:categories :categories-log]))))
 
     (<>
      ($ title-bar)
      (d/div
       {:class "wrapper"
        :key "div.wrapper"}
-      ($ categories {:state state :set-state set-state})
-      ($ add-category-form {:state state :set-state set-state})
-      ($ config {:state state :set-state set-state})
-      ($ debugger {:state state :set-state set-state})
-      ($ network-response-display {:state state :set-state set-state})))))
+      ($ categories {:state state :dispatch dispatch})
+      ($ add-category-form {:state state :dispatch dispatch})
+      ($ config {:state state :dispatch dispatch})
+      ($ debugger {:state state :dispatch dispatch})
+      ($ network-response-display {:state state :dispatch dispatch})))))
