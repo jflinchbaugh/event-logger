@@ -853,6 +853,7 @@
 (defnc add-category-form [{:keys [state dispatch]}]
   (d/div
    {:class "add"}
+   (d/span {:class "category-debug"} (:new-category state))
    (d/input
     {:class "new-category"
      :key :new-category
