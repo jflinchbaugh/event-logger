@@ -206,13 +206,13 @@
 
     (t/testing "add a category"
       (t/is (= 0 (count (tlr/queryAllByText container "+")))
-            "there are no categories, those no add buttons")
+        "there are no categories, those no add buttons")
       (t/is (= ":new-category" (.-name category-input)))
       (t/is (= "" (.-value category-input)))
 
-      (tlr/fireEvent.change
-       category-input
-       #js {:target #js {:value "My New Category"}})
+      (tlr/fireEvent.input
+        category-input
+        #js {:target #js {:value "My New Category"}})
       (t/is (= "My New Category" (.-value category-input)))
 
       (t/is add-btn)
