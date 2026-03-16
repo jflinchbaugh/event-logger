@@ -161,6 +161,7 @@
       (t/is (tlr/getByText container "Reload"))
       (t/is (tlr/getByText container "Upload"))
       (t/is (tlr/getByText container "Download"))
+      (t/is (tlr/getByText container "Export CSV"))
       (t/is (tlr/getByText container "{:things :ok}")))
 
     (t/testing "clicking the button hides debug data"
@@ -190,7 +191,8 @@
       (tlr/fireEvent.click debug-btn)
       (t/is (tlr/getByText container "Reload"))
       (t/is (tlr/getByText container "Upload"))
-      (t/is (tlr/getByText container "Download")))
+      (t/is (tlr/getByText container "Download"))
+      (t/is (tlr/getByText container "Export CSV")))
 
     (t/testing "clicking the button hides debug data"
       (tlr/fireEvent.click debug-btn)
@@ -227,3 +229,16 @@
 
       (t/is (= 1 (count (tlr/queryAllByText container "+")))
             "new category has 1 + button"))))
+
+(t/deftest test-events->csv
+  (t/testing "generates CSV from state and sorts by category then date-time"
+    (let [state {:categories [{:name "Work"
+                               :events [{:date-time "2024-01-01T09:00:00" :note "Start"}
+                                        {:date-time "2024-01-01T17:00:00" :note "End, \"done\""}]}
+                              {:name "Gym"
+                               :events [{:date-time "2024-01-01T18:00:00" :note nil}]}]}
+          expected (str "Category,Date-Time,Note\n"
+                        "Gym,2024-01-01T18:00:00,\n"
+                        "Work,2024-01-01T09:00:00,Start\n"
+                        "Work,2024-01-01T17:00:00,\"End, \"\"done\"\"\"")]
+      (t/is (= expected (sut/events->csv state))))))

@@ -196,6 +196,45 @@
                    :error-text "Failed to download! Check resource config.")]))
         (dispatch [:set-network-response response])))))
 
+(defn- escape-csv-field
+  [field]
+  (let [s (str (or field ""))]
+    (if (or (str/includes? s ",")
+            (str/includes? s "\"")
+            (str/includes? s "\n"))
+      (str "\"" (str/replace s "\"" "\"\"") "\"")
+      s)))
+
+(defn events->csv
+  [state]
+  (let [categories (:categories state)
+        header "Category,Date-Time,Note"
+        all-events (for [category categories
+                         event (:events category)]
+                     {:category-name (:name category)
+                      :date-time (:date-time event)
+                      :note (:note event)})
+        sorted-events (sort-by (juxt :category-name :date-time) all-events)
+        rows (for [event sorted-events]
+               (str (escape-csv-field (:category-name event)) ","
+                    (escape-csv-field (:date-time event)) ","
+                    (escape-csv-field (:note event))))]
+    (str/join "\n" (cons header rows))))
+
+(defn export-csv!
+  [state]
+  (let [csv-content (events->csv state)
+        blob (js/Blob. #js [csv-content] #js {:type "text/csv;charset=utf-8;"})
+        url (js/URL.createObjectURL blob)
+        link (js/document.createElement "a")]
+    (set! (.-href link) url)
+    (set! (.-download link) (str "events-" (now-str) ".csv"))
+    (set! (.. link -style -visibility) "hidden")
+    (js/document.body.appendChild link)
+    (.click link)
+    (js/document.body.removeChild link)
+    (js/URL.revokeObjectURL url)))
+
 ;; confirmations utils
 
 (defn get-confirm
@@ -786,6 +825,13 @@
            :on-click (fn []
                        (download! (:config state) dispatch))}
           "Download"))
+        (d/div
+         {:class "row"}
+         (d/button
+          {:class "export-csv"
+           :on-click (fn []
+                       (export-csv! state))}
+          "Export CSV"))
         (d/div
          {:class "row"}
          (d/button
