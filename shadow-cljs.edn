@@ -4,12 +4,12 @@
   "src/main"
   "src/test"]
  :dependencies [[lilactown/helix "0.2.2"]
-                [com.taoensso/telemere "1.2.1"]
+                [com.taoensso/telemere "1.4.0"]
                 [tick "1.0.1"]
                 [cljs-http "0.1.49"]
-                [cider/cider-nrepl "0.59.0"]
+                [cider/cider-nrepl "0.63.1"]
                 [binaryage/devtools "1.0.7"]
-                [refactor-nrepl "3.13.0"]]
+                [refactor-nrepl "3.14.0"]]
  :nrepl {:port 7888}
  :dev-http {3000
             {:root "public"
